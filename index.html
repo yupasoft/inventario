@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Inventario y ventas · Yupasoft</title>
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0C1A2E">
+<script>try{if(localStorage.getItem("yp_tema")==="claro"){document.documentElement.setAttribute("data-tema","claro");document.querySelector('meta[name=theme-color]').content="#F4F7FA"}}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Marca Yupasoft: Tinta #0C1A2E, Turquesa #2ED3B7, Ámbar #F2A93B. Oscuro por defecto; claro solo si se elige. */
+:root{--acc:#2ED3B7;--acc-tx:#0C1A2E;--amb:#F2A93B;--mal:#FF7A70;--bg:#0C1A2E;--card:#152741;--card2:#1B3050;--tx:#F4F7FA;--bd:#243B58;--mute:#9BB0C9;--sombra:0 10px 30px rgba(0,0,0,.35)}
+:root[data-tema="claro"]{--acc:#12806E;--acc-tx:#fff;--amb:#A8650A;--mal:#C0392B;--bg:#F4F7FA;--card:#fff;--card2:#EEF3F8;--tx:#0C1A2E;--bd:#D9E2EC;--mute:#566B82;--sombra:0 8px 24px rgba(12,26,46,.10)}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;font:15px/1.45 'Sora',system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--tx);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.rot{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.dim{color:var(--mute);font-size:13px}
+
+/* Entrada */
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.gate .caja{width:min(420px,100%);background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:28px;text-align:center}
+.gate h2{margin:14px 0 8px;font-size:19px}.gate p{margin:0 0 18px;color:var(--mute)}
+.gate .bts{display:flex;flex-direction:column;gap:8px}
+.gate a,.gate button{display:block;width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:transparent;color:var(--tx);text-decoration:none;text-align:center}
+.gate .pri{background:var(--acc);color:var(--acc-tx);border-color:var(--acc);font-weight:700}
+
+/* Barra superior */
+.barra{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--bd)}
+.barra-in{padding:10px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.marca{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;letter-spacing:-.01em;margin-right:auto;min-width:0}
+.marca svg{width:24px;height:24px;flex:none}
+.marca small{display:block;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sel{min-height:34px;padding:5px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font-size:13px;font-weight:600;max-width:210px}
+.sel option{background:var(--card);color:var(--tx)}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:3px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:7px 12px;border-radius:8px;font-weight:600;font-size:13px;color:var(--mute)}
+.seg button[aria-pressed="true"]{background:var(--acc);color:var(--acc-tx)}
+.bt{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 14px;border:1px solid var(--bd);border-radius:10px;background:transparent;color:var(--tx);font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap}
+.bt:hover{border-color:var(--acc)}
+.bt.pri{background:var(--acc);border-color:var(--acc);color:var(--acc-tx);font-weight:700}
+.bt.amb{background:var(--amb);border-color:var(--amb);color:#0C1A2E;font-weight:700}
+.bt.peq{min-height:34px;padding:5px 10px;font-size:13px}
+.bt.gra{min-height:52px;font-size:16px;width:100%}
+.bt.mal{color:var(--mal)}
+.bt:disabled{opacity:.5;cursor:default}
+.ico{width:40px;padding:0}
+.tabs{padding:0 24px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{border:0;background:transparent;padding:10px 12px;font-weight:600;font-size:14px;color:var(--mute);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-current="page"]{color:var(--tx);border-bottom-color:var(--acc)}
+.cinta{background:var(--amb);color:#0C1A2E;text-align:center;font-weight:700;font-size:13px;padding:6px 12px}
+
+main{padding:18px 28px 96px}
+.fila{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fila .sep{margin-left:auto}
+h1{font-size:22px;margin:0;letter-spacing:-.02em}
+h2{font-size:16px;margin:0}
+.sec{margin-top:22px}
+.sec>.fila{margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px}
+.duo{display:grid;grid-template-columns:minmax(0,1fr);gap:0 20px}
+@media (min-width:1100px){.duo{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.duo.g32{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:16px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+.kpi b{display:block;font:700 24px/1.15 'Sora',sans-serif;letter-spacing:-.02em;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi.aviso b{color:var(--amb)}
+.kpi small{color:var(--mute);font-size:12px}
+.barras{display:flex;align-items:flex-end;gap:10px;height:150px;padding-top:8px}
+.barras div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;min-width:0;height:100%}
+.barras i{display:block;width:100%;max-width:70px;border-radius:7px 7px 2px 2px;background:var(--acc);opacity:.55;min-height:3px}
+.barras .hoy i{opacity:1}
+.barras small{font:500 11px 'IBM Plex Mono',monospace;color:var(--mute);white-space:nowrap}
+.barras em{font:600 11px 'IBM Plex Mono',monospace;font-style:normal;color:var(--tx);white-space:nowrap}
+
+/* Productos */
+.busca{min-height:44px;padding:9px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);min-width:0;flex:1 1 220px;max-width:420px;font-size:16px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:12px 0 0;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;border:1px solid var(--bd);background:transparent;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;color:var(--mute)}
+.chips button[aria-pressed="true"]{background:var(--tx);border-color:var(--tx);color:var(--bg)}
+.grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:8px;margin-top:14px}
+.it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;text-align:left;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:11px 14px;width:100%;min-width:0}
+button.it:hover{border-color:var(--acc)}
+.it.sel-on{border-color:var(--acc);background:var(--card2)}
+.it.arch{opacity:.55}
+.it-n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it-s{grid-column:1;color:var(--mute);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it-m{grid-row:1;grid-column:2;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.it-q{grid-row:2;grid-column:2;text-align:right;color:var(--mute);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.it-m.mas{color:var(--acc)}.it-m.menos{color:var(--mal)}
+.stk.bajo{color:var(--amb)}.stk.cero{color:var(--mal)}
+.tach{text-decoration:line-through;color:var(--mute);font-weight:400;font-size:12.5px;margin-right:6px}
+.pill{display:inline-block;border-radius:999px;padding:1px 8px;font:600 11px 'IBM Plex Mono',monospace;background:var(--card2);color:var(--mute);vertical-align:middle}
+.pill.of{background:var(--amb);color:#0C1A2E}
+.pill.mal{background:transparent;border:1px solid var(--mal);color:var(--mal)}
+.selbar{position:sticky;top:104px;z-index:10;background:var(--card2);border:1px solid var(--acc);border-radius:14px;padding:10px 12px;margin-top:12px}
+.vacio{border:1px dashed var(--bd);border-radius:14px;padding:26px 18px;text-align:center;color:var(--mute);grid-column:1/-1}
+.vacio b{display:block;color:var(--tx);margin-bottom:4px}
+.lista{display:flex;flex-direction:column;gap:6px}
+
+/* Venta */
+.carro{position:sticky;top:112px}
+.linea{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)}
+.linea b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.linea small{grid-column:1;color:var(--mute);font-size:12.5px}
+.cant{display:inline-flex;align-items:center;gap:2px;grid-row:1/3;grid-column:2}
+.cant button{width:38px;height:38px;border-radius:10px;border:1px solid var(--bd);background:transparent;font-size:18px;font-weight:700}
+.cant span{min-width:30px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.linea .imp{grid-row:1/3;grid-column:3;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;min-width:86px}
+.total{display:flex;justify-content:space-between;align-items:baseline;margin:14px 0}
+.total b{font:800 28px 'Sora',sans-serif;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+
+/* Tablas */
+.tw{overflow-x:auto;border:1px solid var(--bd);border-radius:14px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--bd);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+thead th{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+tr:last-child td{border-bottom:0}
+tr.tot td{font-weight:700;background:var(--card2)}
+
+/* Ventanas */
+.velo{position:fixed;inset:0;z-index:50;background:rgba(4,10,20,.66);display:flex;align-items:center;justify-content:center;padding:16px}
+.vent{width:min(540px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:20px;box-shadow:var(--sombra)}
+.vent h3{margin:0 0 4px;font-size:18px}
+.vent .sub{color:var(--mute);font-size:13px;margin:0 0 14px}
+.campos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.campo{display:flex;flex-direction:column;gap:5px;min-width:0}
+.campo.todo{grid-column:1/-1}
+.campo label,.campo .lb{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--mute)}
+.campo input,.campo select{width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:16px}
+.campo input:focus,.campo select:focus{outline:2px solid var(--acc);border-color:transparent}
+.campo select option{background:var(--card);color:var(--tx)}
+.pie{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:18px}
+.pie .izq{margin-right:auto}
+.acciones{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:14px}
+.err{color:var(--mal);font-size:13px;margin-top:10px;min-height:1em}
+.nota{background:var(--card2);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--mute);margin-top:12px}
+.det{display:grid;grid-template-columns:1fr auto;gap:6px 14px;font-size:14px;margin-top:6px}
+.det span{color:var(--mute)}.det b{text-align:right;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:var(--sombra);max-width:calc(100vw - 32px);text-align:center}
+#cam{width:100%;border-radius:12px;background:#000;aspect-ratio:4/3;object-fit:cover}
+
+@media (max-width:640px){
+  .barra-in{padding:8px 12px;gap:8px}.marca small{display:none}
+  .solo-pc{display:none!important}
+  .sel{max-width:150px}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bg);border-top:1px solid var(--bd);padding:0 4px env(safe-area-inset-bottom)}
+  .tabs button{flex:1 0 auto;padding:14px 9px;border-bottom:0;border-top:2px solid transparent;font-size:12.5px}
+  .tabs button[aria-current="page"]{border-top-color:var(--acc)}
+  main{padding:14px 12px 110px}
+  .grilla{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi b{font-size:20px}
+  .campos{grid-template-columns:1fr}
+  .velo{align-items:flex-end;padding:0}.vent{border-radius:18px 18px 0 0;width:100%;max-height:92vh;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  .toast{bottom:76px}
+  .selbar{top:60px}.carro{position:static}
+  th,td{padding:8px 8px;font-size:12.5px}
+}
+@media print{.barra,.tabs,.bt{display:none!important}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<div class="gate" id="gate"><div class="caja">
+  <div id="gLogo"></div>
+  <h2 id="gT">Comprobando tu cuenta…</h2>
+  <p id="gM">Un momento.</p>
+  <div class="bts" id="gB"></div>
+</div></div>
+
+<div id="app" hidden>
+  <div class="cinta" id="cinta" hidden></div>
+  <header class="barra">
+    <div class="barra-in">
+      <div class="marca"><span id="logo"></span><span style="min-width:0">Inventario<small id="quien"></small></span></div>
+      <select class="sel" id="selLocal" aria-label="Local"></select>
+      <button class="bt peq solo-pc" data-a="excel">Excel</button>
+      <button class="bt peq ico" data-a="tema" id="bTema" aria-label="Cambiar tema" title="Cambiar tema">☀</button>
+      <a class="bt peq" href="../portal/?menu=1" title="Mis herramientas">←<span class="solo-pc"> Mis herramientas</span></a>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Secciones"></nav>
+  </header>
+  <main id="vista"></main>
+</div>
+<div id="modal"></div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   INVENTARIO Y VENTAS · pantalla
+   Ingreso: misma sesión del portal Yupasoft (clave "yv_sesion").
+   Los datos solo se leen y se cambian llamando a las funciones inv_* de la base:
+   ellas deciden quién puede qué. Aquí solo se ocultan los botones que no tocan.
+   ===================================================================== */
+const SB_URL = 'https://ylwqztypjilecjwywawd.supabase.co', SB_KEY = 'sb_publishable_oHr1AqDbKi_lileKrmkhMg_4T6zYJ7E';
+const ID = 'inventario', NOMBRE = 'Inventario', PORTAL = '../portal/', WSP = 'https://wa.me/51967292374';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const COMO = new URLSearchParams(location.search).get('como');
+const MES3 = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'], DIA3 = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const TIPO = { entrada: 'Ingreso', salida: 'Salida', ajuste: 'Ajuste', venta: 'Venta', anulacion: 'Venta anulada', traslado: 'Traslado' };
+const PARADO = 30;   // días sin venderse para avisar
+
+/* ---------- Estado ---------- */
+let ses = null, P = null, ctx = null, hoy = '', vista = 'inicio', local = '';
+let D = { locales: [], productos: [], stock: [], movimientos: [], ventas: [] }, S = {}, REP = {};
+let filtro = { q: '', cat: 'Todas', arch: false }, selec = null, carro = [], qv = '', fmov = 'todos', verVentas = false, rango = 7, flujo = null, lectorZ = null, seguido = false, leidos = [];
+const puedeEditar = () => !!ctx && (ctx.acceso === 'total' || ctx.acceso === 'editar');
+const puedeTodo = () => !!ctx && ctx.acceso === 'total';
+const veCosto = () => !!ctx && ctx.acceso !== 'editar';
+
+/* ---------- Formato ---------- */
+const fmt = n => (n < 0 ? '−' : '') + 'S/ ' + Math.abs(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const UNI = { und: 'und', kg: 'kg', lt: 'L', m: 'm' }, UNI_L = { und: 'Por unidad (pieza)', kg: 'Al peso (kilo)', lt: 'A granel (litro)', m: 'Por metro' };
+const r2 = n => Math.round(n * 100) / 100, r3 = n => Math.round(n * 1000) / 1000;
+const num3 = n => r3(Number(n || 0)).toLocaleString('en-US', { maximumFractionDigits: 3 });
+const alPeso = p => !!p && !!p.unidad && p.unidad !== 'und';
+const cant = (p, n) => num3(n) + ' ' + UNI[(p && p.unidad) || 'und'];
+const dia = f => +f.slice(8, 10) + ' ' + MES3[+f.slice(5, 7) - 1];
+const sumarDias = (f, n) => { const d = new Date(Date.UTC(+f.slice(0, 4), +f.slice(5, 7) - 1, +f.slice(8, 10)) + n * 86400000); return d.toISOString().slice(0, 10); };
+const diasEntre = (a, b) => Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / 86400000);
+const FH = new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+const cuando = iso => FH.format(new Date(iso)).replace('.', '');
+function leerMonto(v) {
+  let s = String(v ?? '').replace(/[sS]\/|\s/g, '');
+  if (s.includes(',') && s.includes('.')) s = s.replace(/,/g, '');
+  else if (/,\d{1,2}$/.test(s)) s = s.replace(',', '.');
+  else s = s.replace(/,/g, '');
+  if (!/^\d+(\.\d+)?$/.test(s)) return NaN;
+  return Math.round(parseFloat(s) * 100) / 100;
+}
+const leerEntero = v => { const s = String(v ?? '').trim(); return /^\d{1,7}$/.test(s) ? +s : NaN; };
+// Cantidad en la unidad del producto: entera si es por pieza, con hasta 3 decimales si es al peso
+const leerCant = (v, p) => { if (!alPeso(p)) return leerEntero(v); const s = String(v ?? '').trim().replace(',', '.'); return /^\d{0,7}(\.\d{1,3})?$/.test(s) && s !== '' ? +s : NaN; };
+function isotipo(px) {
+  let r = '';
+  for (let c = 0; c < 4; c++) for (let f = 0; f < 4; f++) {
+    const llena = f >= 3 - c;
+    r += llena ? `<rect x="${c * 27}" y="${f * 27}" width="20" height="20" rx="5.5" fill="${c === 3 && f === 0 ? '#F2A93B' : '#2ED3B7'}"/>`
+      : `<rect x="${c * 27 + 1.6}" y="${f * 27 + 1.6}" width="16.8" height="16.8" rx="4.5" fill="none" stroke="currentColor" stroke-width="3.2" opacity=".3"/>`;
+  }
+  return `<svg viewBox="0 0 101 101" width="${px}" height="${px}" role="img" aria-label="Yupasoft">${r}</svg>`;
+}
+function toast(t) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 3400); }
+
+/* ---------- Sesión y red ---------- */
+try { ses = JSON.parse(localStorage.getItem('yv_sesion') || 'null'); } catch (e) { ses = null; }
+function guardarSes(s) { ses = s; try { if (s) localStorage.setItem('yv_sesion', JSON.stringify(s)); else localStorage.removeItem('yv_sesion'); } catch (e) { } }
+function alPortal() { location.replace(PORTAL + '?volver=' + ID); }
+async function pedir(ruta, opc = {}) {
+  const h = { apikey: SB_KEY, 'Content-Type': 'application/json' };
+  if (opc.ses !== false && ses) h.Authorization = 'Bearer ' + ses.access_token;
+  let r;
+  try { r = await fetch(SB_URL + ruta, { method: 'POST', headers: h, body: JSON.stringify(opc.cuerpo || {}) }); }
+  catch (e) { throw new Error('Sin conexión. Revisa tu internet e inténtalo de nuevo.'); }
+  const x = await r.text(); let d = null; try { d = x ? JSON.parse(x) : null; } catch (e) { }
+  if (!r.ok) { const er = new Error((d && (d.message || d.msg || d.error_description || d.error)) || ('Error ' + r.status)); er.status = r.status; throw er; }
+  return d;
+}
+async function token() {
+  if (!ses) { const e = new Error('Sin sesión'); e.status = 401; throw e; }
+  if (ses.expires_at - Date.now() / 1000 > 90) return;
+  try {
+    const d = await pedir('/auth/v1/token?grant_type=refresh_token', { cuerpo: { refresh_token: ses.refresh_token }, ses: false });
+    guardarSes({ access_token: d.access_token, refresh_token: d.refresh_token, expires_at: Date.now() / 1000 + d.expires_in });
+  } catch (e) { if (e.status >= 400 && e.status < 500) e.status = 401; throw e; }
+}
+async function rpc(f, a) {      // si la sesión ya no sirve, vuelve al portal
+  try { await token(); return await pedir('/rest/v1/rpc/' + f, { cuerpo: a || {} }); }
+  catch (e) { if (e.status === 401) { guardarSes(null); alPortal(); } throw e; }
+}
+
+/* ---------- Datos ---------- */
+function aplicar(e) {
+  D = e; S = {}; hoy = e.hoy;
+  e.stock.forEach(s => S[s.p + '|' + s.l] = s.c);
+  if (local && !D.locales.some(l => l.id === local && l.activo)) local = '';
+}
+const activos = () => D.locales.filter(l => l.activo);
+const loc = id => D.locales.find(l => l.id === id) || { nombre: '—' };
+const pro = id => D.productos.find(p => p.id === id);
+const nom = p => p ? p.nombre + (p.variante ? ' · ' + p.variante : '') : 'Producto';
+const stk = (pid, lid) => S[pid + '|' + lid] || 0;
+const stkTotal = pid => r3(D.locales.reduce((a, l) => a + stk(pid, l.id), 0));
+const stkVista = pid => local ? stk(pid, local) : stkTotal(pid);
+const precioFinal = p => Math.round(Number(p.precio) * (100 - Number(p.oferta || 0))) / 100;
+const porUni = p => alPeso(p) ? ' /' + UNI[p.unidad] : '';
+// "1,240 und · 35.5 kg": suma por tipo de unidad lo que devuelve f(producto)
+function resumen(lista, f) {
+  const t = {}; lista.forEach(p => { const u = p.unidad || 'und'; t[u] = (t[u] || 0) + f(p); });
+  const r = Object.keys(UNI).filter(u => t[u]).map(u => num3(t[u]) + ' ' + UNI[u]);
+  return r.length ? r.join(' · ') : '0 und';
+}
+const nivel = p => { const t = stkTotal(p.id); return t === 0 ? 'cero' : (p.minimo > 0 && t <= p.minimo) ? 'bajo' : ''; };
+const localVenta = () => local || (activos().length === 1 ? activos()[0].id : '');
+async function cargar() { aplicar(await rpc('inv_estado', { p_como: COMO || null })); REP = {}; }
+// Reporte de ventas de los últimos n días (n = 1 es hoy). Se pide una vez y se guarda hasta el siguiente cambio.
+function reporte(n) {
+  const k = n + '|' + local, r = REP[k];
+  if (r && r !== 'pidiendo') return r;
+  if (!r) {
+    REP[k] = 'pidiendo';
+    rpc('inv_reporte', { p_desde: sumarDias(hoy, 1 - n), p_hasta: hoy, p_local: local || null, p_como: COMO || null })
+      .then(x => { REP[k] = x; pintar(); }).catch(e => { delete REP[k]; toast(e.message); });
+  }
+  return null;
+}
+
+/* ---------- Entrada ---------- */
+function dispositivo() { const ua = navigator.userAgent || ''; return (/Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua))) ? 'celular' : 'computadora'; }
+function avisar(titulo, msg, reintentar) {
+  $('#app').hidden = true; $('#gate').hidden = false; $('#gT').textContent = titulo; $('#gM').textContent = msg;
+  $('#gB').innerHTML = (reintentar ? '<button class="pri" data-a="reintentar">Reintentar</button>' : '') +
+    `<a href="${PORTAL}?menu=1" class="${reintentar ? '' : 'pri'}">Ir a mis herramientas</a><a href="${WSP}" target="_blank" rel="noopener">Escribir a Yupasoft por WhatsApp</a>`;
+}
+async function comprobar() {
+  if (!ses) { alPortal(); return; }
+  $('#gT').textContent = 'Comprobando tu cuenta…'; $('#gM').textContent = 'Un momento.'; $('#gB').innerHTML = '';
+  try {
+    P = await rpc('yp_mi_portal', COMO ? { p_como: COMO } : {});
+    const h = (P.herramientas || []).find(x => x.id === ID), l = h && h.licencia, adm = P.es_super && !P.como;
+    if (!h || (!l && !adm)) return avisar('Tu cuenta no tiene esta herramienta', NOMBRE + ' no está activo en tu cuenta. Escríbenos y lo activamos.');
+    if (l && !l.activa && !adm) return avisar('Herramienta inactiva', NOMBRE + ' está inactivo en tu cuenta. Escribe a Yupasoft.');
+    if (l && !l.vigente && !adm) return avisar('Tu licencia venció', 'Tus datos siguen guardados. Escribe a Yupasoft para renovar ' + NOMBRE + '.');
+    if (l && !adm && l.dispositivos !== 'todos' && l.dispositivos !== dispositivo()) return avisar(l.dispositivos === 'computadora' ? 'Disponible solo en computadora' : 'Disponible solo en celular', l.dispositivos === 'computadora' ? 'Ábrelo desde tu laptop o PC.' : 'Ábrelo desde tu teléfono.');
+    ctx = await rpc('inv_abrir', { p_como: COMO || null });
+    await cargar();
+    try { const g = localStorage.getItem('yi_local'); if (g && activos().some(x => x.id === g)) local = g; } catch (e) { }
+    $('#gate').hidden = true; $('#app').hidden = false;
+    pintar();
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) return;
+    avisar(e.status ? 'No se pudo abrir ' + NOMBRE : 'Sin conexión', e.status ? e.message : 'Revisa tu internet e inténtalo de nuevo.', true);
+  }
+}
+
+/* ---------- Pintar ---------- */
+const TABS = () => [['inicio', 'Inicio'], ['inventario', 'Inventario'], ...(puedeEditar() ? [['vender', 'Vender']] : []), ['movs', 'Movimientos'], ['reportes', 'Reportes'], ...(puedeTodo() || ctx.acceso === 'ver' ? [['locales', 'Locales']] : [])];
+function pintar() {
+  if (!ctx) return;
+  $('#quien').textContent = (ctx.empresa || 'Yupasoft') + (ctx.usuario ? ' · ' + ctx.usuario : '');
+  $('#cinta').hidden = ctx.acceso !== 'ver';
+  $('#cinta').textContent = 'Viendo como ' + (ctx.empresa || '') + ' · solo lectura';
+  const ls = activos();
+  $('#selLocal').innerHTML = (ls.length > 1 ? '<option value="">Todos los locales</option>' : '') + ls.map(l => `<option value="${l.id}" ${l.id === local ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('');
+  $('#selLocal').hidden = ls.length < 2;
+  if (!TABS().some(t => t[0] === vista)) vista = 'inicio';
+  $('#tabs').innerHTML = TABS().map(([id, t]) => `<button data-a="vista" data-v="${id}" ${id === vista ? 'aria-current="page"' : ''}>${t}${id === 'vender' && carro.length ? ' (' + carro.length + ')' : ''}</button>`).join('');
+  $('#vista').innerHTML = ({ inicio: vInicio, inventario: vInventario, vender: vVender, movs: vMovs, reportes: vReportes, locales: vLocales }[vista])();
+}
+const subLocal = () => local ? 'en ' + esc(loc(local).nombre) : (activos().length > 1 ? 'en todos los locales' : '');
+const stockTxt = p => { const n = nivel(p), v = stkVista(p.id); return `<span class="stk ${n}">${cant(p, v)}</span>`; };
+const precioTxt = p => (Number(p.oferta) > 0 ? `<span class="tach">${fmt(p.precio)}</span>${fmt(precioFinal(p))}` : fmt(p.precio)) + porUni(p);
+const ofertaPill = p => Number(p.oferta) > 0 ? ` <span class="pill of">−${Number(p.oferta)}%</span>` : '';
+
+function vInicio() {
+  const r = reporte(7), vivos = D.productos.filter(p => p.activo);
+  const dHoy = r && r.dias.find(d => d.dia === hoy), bajos = vivos.filter(p => nivel(p));
+  let barras = '<div class="vacio">Cargando ventas…</div>';
+  if (r) {
+    const dias = []; for (let i = 6; i >= 0; i--) { const f = sumarDias(hoy, -i), d = r.dias.find(x => x.dia === f); dias.push({ f, v: d ? Number(d.total) : 0 }); }
+    const max = Math.max(...dias.map(x => x.v)) || 1;
+    barras = `<div class="barras">${dias.map(x => `<div class="${x.f === hoy ? 'hoy' : ''}" title="${dia(x.f)}: ${fmt(x.v)}"><em>${x.v ? Math.round(x.v).toLocaleString('en-US') : ''}</em><i style="height:${Math.max(2, x.v / max * 100)}%"></i><small>${x.f === hoy ? 'Hoy' : DIA3[new Date(x.f + 'T12:00:00Z').getUTCDay()]}</small></div>`).join('')}</div>`;
+  }
+  if (!D.productos.length) return `<div class="fila"><h1>Inicio</h1></div>
+    <div class="vacio" style="margin-top:16px"><b>Todavía no hay productos</b>${puedeTodo() ? 'Empieza agregando lo que vendes: nombre, precio, costo y cuánto tienes.' : 'El Responsable todavía no agrega productos.'}
+    ${puedeTodo() ? '<div style="margin-top:14px"><button class="bt pri" data-a="producto">+ Agregar el primer producto</button></div>' : ''}</div>`;
+  return `<div class="fila"><h1>Inicio</h1><span class="dim">${dia(hoy)} ${subLocal() ? '· ' + subLocal() : ''}</span><span class="sep"></span>${puedeEditar() ? '<button class="bt pri" data-a="vista" data-v="vender">Nueva venta</button>' : ''}</div>
+    <div class="kpis" id="kpis">
+      <div class="kpi"><span class="rot">Vendido hoy</span><b id="kVendido">${r ? fmt(dHoy ? dHoy.total : 0) : '…'}</b><small>${r ? (dHoy ? dHoy.ventas : 0) + (dHoy && +dHoy.ventas === 1 ? ' venta' : ' ventas') : ''}</small></div>
+      ${veCosto() ? `<div class="kpi"><span class="rot">Ganancia de hoy</span><b id="kGan">${r ? fmt(dHoy ? dHoy.ganancia : 0) : '…'}</b><small>precio menos costo</small></div>` : ''}
+      <div class="kpi"><span class="rot">En stock</span><b id="kStock" style="font-size:${vivos.some(alPeso) ? 18 : 24}px">${resumen(vivos, p => stkVista(p.id))}</b><small>${vivos.length} ${vivos.length === 1 ? 'producto' : 'productos'}</small></div>
+      <div class="kpi ${bajos.length ? 'aviso' : ''}"><span class="rot">Por agotarse</span><b id="kBajos">${bajos.length}</b><small>agotados o bajo el mínimo</small></div>
+      <div class="kpi"><span class="rot">En oferta</span><b>${vivos.filter(p => Number(p.oferta) > 0).length}</b><small>productos con descuento</small></div>
+    </div>
+    <div class="duo g32">
+      <div class="sec"><div class="fila"><h2>Ventas de los últimos 7 días</h2><span class="dim">en soles</span></div><div class="card">${barras}</div></div>
+      <div class="sec"><div class="fila"><h2>Por agotarse</h2></div>
+        <div class="lista">${bajos.length ? bajos.slice(0, 8).map(p => filaProducto(p, true)).join('') + (bajos.length > 8 ? `<span class="dim">y ${bajos.length - 8} más en Inventario</span>` : '') : '<div class="vacio">Todo con stock suficiente.</div>'}</div></div>
+    </div>`;
+}
+
+function filaProducto(p, simple) {
+  const on = selec && selec.has(p.id);
+  const sub = [p.categoria, p.codigo, !p.activo ? 'archivado' : ''].filter(Boolean).join(' · ') || '—';
+  return `<button class="it ${on ? 'sel-on' : ''} ${p.activo ? '' : 'arch'}" data-a="${selec && !simple ? 'marcar' : 'ficha'}" data-p="${p.id}">
+    <span class="it-n">${selec && !simple ? (on ? '☑ ' : '☐ ') : ''}${esc(nom(p))}${ofertaPill(p)}</span><span class="it-m">${simple ? stockTxt(p) : precioTxt(p)}</span>
+    <span class="it-s">${esc(simple ? 'mínimo ' + cant(p, p.minimo) : sub)}</span><span class="it-q">${simple ? '' : stockTxt(p)}</span></button>`;
+}
+function visibles() {
+  const q = filtro.q.trim().toLowerCase();
+  return D.productos.filter(p => (filtro.arch ? !p.activo : p.activo) && (filtro.cat === 'Todas' || (filtro.cat === 'En oferta' ? Number(p.oferta) > 0 : filtro.cat === 'Por agotarse' ? !!nivel(p) : p.categoria === filtro.cat))
+    && (!q || nom(p).toLowerCase().includes(q) || (p.codigo || '').toLowerCase().includes(q) || (p.categoria || '').toLowerCase().includes(q)));
+}
+function vInventario() {
+  const cats = ['Todas', 'En oferta', 'Por agotarse', ...new Set(D.productos.filter(p => p.activo && p.categoria).map(p => p.categoria))];
+  if (!cats.includes(filtro.cat)) filtro.cat = 'Todas';
+  const vis = visibles(), hayArch = D.productos.some(p => !p.activo);
+  return `<div class="fila"><h1>Inventario</h1><span class="dim" id="conteo">${vis.length} de ${D.productos.filter(p => filtro.arch ? !p.activo : p.activo).length} ${subLocal() ? '· stock ' + subLocal() : ''}</span><span class="sep"></span>
+      ${puedeEditar() && !selec ? '<button class="bt" data-a="escaner">Inventario con escáner</button>' : ''}
+      ${puedeTodo() && !selec ? '<button class="bt amb" data-a="selec">% Ofertas</button><button class="bt pri" data-a="producto">+ Producto</button>' : ''}</div>
+    <div class="fila" style="margin-top:12px"><input class="busca" id="busca" type="search" placeholder="Buscar producto, código o categoría" value="${esc(filtro.q)}" autocomplete="off">
+      <button class="bt" data-a="escanear" data-v="buscar" title="Leer el código con la cámara">Escanear</button>
+      ${hayArch ? `<button class="bt peq" data-a="arch">${filtro.arch ? 'Ver activos' : 'Ver archivados'}</button>` : ''}</div>
+    <div class="chips">${cats.map(c => `<button data-a="cat" data-v="${esc(c)}" aria-pressed="${c === filtro.cat}">${esc(c)}</button>`).join('')}</div>
+    ${selec ? `<div class="selbar fila" id="selbar"><b>${selec.size} ${selec.size === 1 ? 'elegido' : 'elegidos'}</b><span class="dim">Toca los productos para elegirlos.</span><span class="sep"></span>
+      <button class="bt peq" data-a="selTodos">Elegir los ${vis.length} que se ven</button>
+      <button class="bt peq amb" data-a="oferta" ${selec.size ? '' : 'disabled'}>Poner en oferta</button>
+      <button class="bt peq" data-a="ofertaQuitar" ${selec.size ? '' : 'disabled'}>Quitar oferta</button>
+      <button class="bt peq" data-a="selFin">Listo</button></div>` : ''}
+    <div class="grilla" id="lista">${vis.length ? vis.map(p => filaProducto(p)).join('') : `<div class="vacio"><b>${D.productos.length ? 'Nada con ese filtro' : 'Todavía no hay productos'}</b>${D.productos.length ? 'Prueba con otra palabra o categoría.' : (puedeTodo() ? 'Agrega tu primer producto con el botón «+ Producto».' : 'El Responsable todavía no agrega productos.')}</div>`}</div>`;
+}
+
+function vVender() {
+  const lv = localVenta(), q = qv.trim().toLowerCase();
+  const res = !lv ? [] : D.productos.filter(p => p.activo && (!q || nom(p).toLowerCase().includes(q) || (p.codigo || '').toLowerCase().includes(q))).slice(0, 60);
+  let tot = 0;
+  const lineas = carro.map(l => { const p = pro(l.id), imp = r2(precioFinal(p) * l.q); tot = r2(tot + imp);
+    return `<div class="linea"><b>${esc(nom(p))}${ofertaPill(p)}</b><small>${fmt(precioFinal(p))}${alPeso(p) ? porUni(p) : ' c/u'} · hay ${cant(p, stk(p.id, lv))}</small>
+      ${alPeso(p) ? `<span class="cant"><button data-a="peso" data-p="${p.id}" style="width:auto;padding:0 12px;font-size:14px" aria-label="Cambiar el peso">${cant(p, l.q)}</button><button data-a="quitar" data-p="${p.id}" aria-label="Quitar">×</button></span>`
+      : `<span class="cant"><button data-a="menos" data-p="${p.id}" aria-label="Quitar uno">−</button><span>${l.q}</span><button data-a="mas" data-p="${p.id}" aria-label="Agregar uno">+</button></span>`}<span class="imp">${fmt(imp)}</span></div>`; }).join('');
+  return `<div class="fila"><h1>Nueva venta</h1><span class="dim">${lv ? 'Se descuenta de ' + esc(loc(lv).nombre) : ''}</span></div>
+    ${!lv ? `<div class="vacio" style="margin-top:16px"><b>¿En qué local estás vendiendo?</b>Elige el local para descontar su stock.
+      <div class="fila" style="justify-content:center;margin-top:14px">${activos().map(l => `<button class="bt" data-a="local" data-v="${l.id}">${esc(l.nombre)}</button>`).join('')}</div></div>` : `
+    <div class="duo g32">
+      <div class="sec"><div class="fila"><input class="busca" id="qv" type="search" placeholder="Buscar, o leer el código con la pistola" value="${esc(qv)}" autocomplete="off" style="max-width:none">
+          <button class="bt" data-a="escanear" data-v="venta">Escanear</button></div>
+        <div class="grilla" id="sugerencias">${res.length ? res.map(p => { const h = stk(p.id, lv), enCarro = (carro.find(l => l.id === p.id) || { q: 0 }).q;
+          return `<button class="it" data-a="agregar" data-p="${p.id}" ${h - enCarro <= 0 ? 'disabled style="opacity:.5"' : ''}><span class="it-n">${esc(nom(p))}${ofertaPill(p)}</span><span class="it-m">${precioTxt(p)}</span>
+            <span class="it-s">${esc([p.categoria, p.codigo].filter(Boolean).join(' · ') || '—')}</span><span class="it-q"><span class="stk ${h === 0 ? 'cero' : ''}">${h === 0 ? 'sin stock aquí' : cant(p, h)}</span></span></button>`; }).join('')
+          : `<div class="vacio">${D.productos.some(p => p.activo) ? 'Ningún producto con esa búsqueda.' : 'Todavía no hay productos para vender.'}</div>`}</div></div>
+      <div class="sec"><div class="card carro" id="carrito"><div class="rot">En esta venta</div>
+        ${carro.length ? lineas + `<div class="total"><span class="dim">Total a cobrar</span><b id="totalVenta">${fmt(tot)}</b></div>
+          <button class="bt pri gra" data-a="cobrar" id="bCobrar">Cobrar ${fmt(tot)}</button>
+          <div style="text-align:center;margin-top:8px"><button class="bt peq" data-a="vaciar">Vaciar</button></div>`
+        : '<p class="dim" style="margin:12px 0 0">Toca un producto de la lista o lee su código para empezar.</p>'}</div></div>
+    </div>`}`;
+}
+
+function filaMov(m) {
+  const p = pro(m.producto_id), mas = m.cantidad > 0;
+  const que = m.tipo === 'traslado' ? (mas ? 'Llegó por traslado' : 'Salió por traslado') : TIPO[m.tipo];
+  return `<div class="it"><span class="it-n">${esc(que)} · ${esc(nom(p))}</span><span class="it-m ${mas ? 'mas' : 'menos'}">${mas ? '+' : '−'}${cant(p, Math.abs(m.cantidad))}</span>
+    <span class="it-s">${esc([cuando(m.cuando), loc(m.local_id).nombre, m.usuario, m.nota].filter(Boolean).join(' · '))}</span><span class="it-q">${m.tipo === 'venta' ? fmt(r2(m.precio_unit * -m.cantidad)) : ''}</span></div>`;
+}
+function vMovs() {
+  const cab = `<div class="fila"><h1>Movimientos</h1><span class="dim">${subLocal()}</span><span class="sep"></span>
+    <div class="seg"><button data-a="verVentas" data-v="0" aria-pressed="${!verVentas}">Entradas y salidas</button><button data-a="verVentas" data-v="1" aria-pressed="${verVentas}">Ventas</button></div></div>`;
+  if (verVentas) {
+    const vs = D.ventas.filter(v => !local || v.local_id === local);
+    return cab + `<div class="grilla" id="ventas">${vs.length ? vs.map(v => `<button class="it ${v.anulada ? 'arch' : ''}" data-a="venta" data-v="${v.id}"><span class="it-n">Venta · ${v.lineas} ${v.lineas === 1 ? 'producto' : 'productos'}${v.anulada ? ' <span class="pill mal">anulada</span>' : ''}</span><span class="it-m">${fmt(v.total)}</span>
+      <span class="it-s">${esc([cuando(v.cuando), loc(v.local_id).nombre, v.usuario].filter(Boolean).join(' · '))}</span><span class="it-q">ver detalle</span></button>`).join('') : '<div class="vacio"><b>Aún no hay ventas</b>Aparecerán aquí apenas registres la primera.</div>'}</div>`;
+  }
+  const tipos = [['todos', 'Todo'], ['venta', 'Ventas'], ['entrada', 'Ingresos'], ['salida', 'Salidas'], ['ajuste', 'Ajustes'], ['traslado', 'Traslados']];
+  const ms = D.movimientos.filter(m => (!local || m.local_id === local) && (fmov === 'todos' || m.tipo === fmov || (fmov === 'venta' && m.tipo === 'anulacion')));
+  return cab + `<div class="chips">${tipos.map(([v, t]) => `<button data-a="fmov" data-v="${v}" aria-pressed="${v === fmov}">${t}</button>`).join('')}</div>
+    <div class="grilla" id="movs">${ms.length ? ms.map(filaMov).join('') : '<div class="vacio"><b>Sin movimientos</b>Aquí queda todo lo que entra y sale, con quién lo hizo.</div>'}</div>
+    ${D.movimientos.length >= 400 ? '<p class="dim" style="margin-top:10px">Se muestran los últimos 400 movimientos.</p>' : ''}`;
+}
+
+const parados = () => D.productos.filter(p => p.activo && stkTotal(p.id) > 0 && diasEntre(p.ult_venta || p.creado, hoy) >= PARADO).map(p => ({ p, d: diasEntre(p.ult_venta || p.creado, hoy) })).sort((a, b) => b.d - a.d);
+function vReportes() {
+  const r = reporte(rango), vivos = D.productos.filter(p => p.activo);
+  const cab = `<div class="fila"><h1>Reportes</h1><span class="dim">${subLocal()}</span><span class="sep"></span>
+    <div class="seg">${[[1, 'Hoy'], [7, '7 días'], [30, '30 días'], [90, '90 días']].map(([n, t]) => `<button data-a="rango" data-v="${n}" aria-pressed="${n === rango}">${t}</button>`).join('')}</div></div>`;
+  if (!r) return cab + '<div class="vacio" style="margin-top:16px">Cargando…</div>';
+  const sum = k => r.dias.reduce((a, d) => a + Number(d[k] || 0), 0), g = r.con_ganancia;
+  const valorP = vivos.reduce((a, p) => a + precioFinal(p) * stkVista(p.id), 0), valorC = vivos.reduce((a, p) => a + Number(p.costo || 0) * stkVista(p.id), 0);
+  const par = parados();
+  return cab + `<div class="kpis">
+      <div class="kpi"><span class="rot">Vendido</span><b id="rVendido">${fmt(sum('total'))}</b><small>${sum('ventas')} ${sum('ventas') === 1 ? 'venta' : 'ventas'}</small></div>
+      ${g ? `<div class="kpi"><span class="rot">Ganancia</span><b id="rGan">${fmt(sum('ganancia'))}</b><small>precio cobrado menos costo</small></div>` : ''}
+      ${g ? `<div class="kpi"><span class="rot">Inventario al costo</span><b>${fmt(valorC)}</b><small>dinero puesto en mercadería</small></div>` : ''}
+      <div class="kpi"><span class="rot">Inventario a precio de venta</span><b>${fmt(valorP)}</b><small>si se vendiera todo hoy</small></div></div>
+    <div class="duo">
+      <div class="sec"><div class="fila"><h2>Lo que más se vende</h2></div>
+        <div class="tw"><table id="tTop"><thead><tr><th>Producto</th><th>Cantidad</th><th>Vendido</th>${g ? '<th>Ganancia</th>' : ''}</tr></thead><tbody>
+        ${r.productos.length ? r.productos.slice(0, 15).map(x => `<tr><td>${esc(nom(pro(x.producto_id)))}</td><td>${cant(pro(x.producto_id), x.cantidad)}</td><td>${fmt(x.total)}</td>${g ? `<td>${fmt(x.ganancia)}</td>` : ''}</tr>`).join('') : `<tr><td colspan="${g ? 4 : 3}" style="text-align:center;color:var(--mute)">Sin ventas en este periodo.</td></tr>`}
+        </tbody></table></div></div>
+      <div class="sec"><div class="fila"><h2>Ventas por día</h2></div>
+        <div class="tw"><table id="tDias"><thead><tr><th>Día</th><th>Ventas</th><th>Vendido</th>${g ? '<th>Ganancia</th>' : ''}</tr></thead><tbody>
+        ${r.dias.length ? r.dias.slice().reverse().map(d => `<tr><td>${dia(d.dia)}</td><td>${d.ventas}</td><td>${fmt(d.total)}</td>${g ? `<td>${fmt(d.ganancia)}</td>` : ''}</tr>`).join('') + `<tr class="tot"><td>Total</td><td>${sum('ventas')}</td><td>${fmt(sum('total'))}</td>${g ? `<td>${fmt(sum('ganancia'))}</td>` : ''}</tr>` : `<tr><td colspan="${g ? 4 : 3}" style="text-align:center;color:var(--mute)">Sin ventas en este periodo.</td></tr>`}
+        </tbody></table></div></div>
+    </div>
+    <div class="sec"><div class="fila"><h2>Parados hace más de ${PARADO} días</h2><span class="dim">tienen stock y no se venden</span></div>
+      <div class="grilla" id="parados">${par.length ? par.slice(0, 30).map(({ p, d }) => `<button class="it" data-a="ficha" data-p="${p.id}"><span class="it-n">${esc(nom(p))}${ofertaPill(p)}</span><span class="it-m"><span class="pill">${d} días</span></span>
+        <span class="it-s">${cant(p, stkTotal(p.id))} · ${fmt(precioFinal(p) * stkTotal(p.id))} a precio de venta</span><span class="it-q">${p.ult_venta ? 'última venta ' + dia(p.ult_venta) : 'nunca vendido'}</span></button>`).join('') : '<div class="vacio">Todo tu inventario se ha movido hace poco.</div>'}</div></div>`;
+}
+
+function vLocales() {
+  const vivos = D.productos.filter(p => p.activo);
+  return `<div class="fila"><h1>Locales</h1><span class="dim">Cada local lleva su propio stock.</span><span class="sep"></span>${puedeTodo() ? '<button class="bt pri" data-a="localNuevo">+ Local</button>' : ''}</div>
+    <div class="grilla" id="locales">${D.locales.map(l => { const u = resumen(vivos, p => stk(p.id, l.id));
+      return `<button class="it ${l.activo ? '' : 'arch'}" data-a="localEditar" data-v="${l.id}" ${puedeTodo() ? '' : 'disabled'}><span class="it-n">${esc(l.nombre)}${l.activo ? '' : ' <span class="pill">inactivo</span>'}</span><span class="it-m">${u}</span>
+        <span class="it-s">${vivos.filter(p => stk(p.id, l.id) > 0).length} productos con stock</span><span class="it-q">${fmt(vivos.reduce((a, p) => a + precioFinal(p) * stk(p.id, l.id), 0))}</span></button>`; }).join('')}</div>
+    <div class="nota">Para pasar mercadería de un local a otro abre el producto en Inventario y usa «Trasladar».</div>`;
+}
+
+/* ---------- Ventanas ---------- */
+let alGuardar = null;
+function ventana(html, guardar) {
+  apagarCamara(); alGuardar = guardar || null;
+  $('#modal').innerHTML = `<div class="velo" data-a="veloCerrar"><form class="vent" id="vent" novalidate>${html}<div class="err" id="vErr" role="alert"></div></form></div>`;
+  const f = $('#vent'); f.addEventListener('submit', e => { e.preventDefault(); enviar(); });
+  const p = f.querySelector('[autofocus]'); if (p && matchMedia('(min-width:641px)').matches) p.focus();
+}
+function apagarCamara() { if (flujo) { flujo.getTracks().forEach(t => t.stop()); flujo = null; } if (lectorZ) { try { lectorZ.reset(); } catch (e) { } lectorZ = null; } }
+function cerrar() { apagarCamara(); $('#modal').innerHTML = ''; alGuardar = null; seguido = false; }
+async function enviar(extra) {
+  if (!alGuardar) return;
+  const bts = [...document.querySelectorAll('#vent button')]; bts.forEach(b => b.disabled = true); $('#vErr').textContent = '';
+  try { const r = await alGuardar(extra); if (r !== false) { const s = seguido; cerrar(); pintar(); if (s) fEscaner(); } }
+  catch (e) { if ($('#vErr')) $('#vErr').textContent = e.message || 'No se pudo guardar.'; }
+  finally { bts.forEach(b => b.disabled = false); }
+}
+const val = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+const campo = (id, lb, html, todo) => `<div class="campo ${todo ? 'todo' : ''}"><label for="${id}">${lb}</label>${html}</div>`;
+const pie = (ok = 'Guardar', extra = '') => `<div class="pie">${extra}<button type="button" class="bt" data-a="cerrar">Cancelar</button><button type="submit" class="bt pri">${ok}</button></div>`;
+const selLocales = (id, elegido, todos) => `<select id="${id}">${(todos ? D.locales : activos()).map(l => `<option value="${l.id}" ${l.id === elegido ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('')}</select>`;
+
+function fProducto(id, codigo) {
+  const p = id ? pro(id) : null, ed = !!p;
+  const cats = [...new Set(D.productos.filter(x => x.categoria).map(x => x.categoria))];
+  ventana(`<h3>${ed ? 'Editar producto' : 'Agregar producto'}</h3><p class="sub">${ed ? 'El stock no se cambia aquí: usa Ingreso, Ajuste o Trasladar.' : 'Si el mismo producto viene en varias tallas o colores, agrega uno por cada una.'}</p>
+    <div class="campos">
+      ${campo('pNombre', 'Nombre', `<input id="pNombre" maxlength="120" value="${esc(p ? p.nombre : '')}" placeholder="Ej. Polo algodón blanco" autocomplete="off" autofocus>`, true)}
+      ${campo('pVar', 'Talla, color o presentación', `<input id="pVar" maxlength="40" value="${esc(p && p.variante || '')}" placeholder="Ej. M" autocomplete="off">`)}
+      ${campo('pCat', 'Categoría', `<input id="pCat" maxlength="60" value="${esc(p && p.categoria || '')}" list="pCats" placeholder="Ej. Polos" autocomplete="off"><datalist id="pCats">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>`)}
+      ${campo('pPrecio', '<span id="pPrecioLb">Precio de venta (S/)</span>', `<input id="pPrecio" inputmode="decimal" value="${p ? Number(p.precio).toFixed(2) : ''}" placeholder="0.00" autocomplete="off">`)}
+      ${campo('pCosto', '<span id="pCostoLb">Costo (S/)</span>', `<input id="pCosto" inputmode="decimal" value="${p ? Number(p.costo || 0).toFixed(2) : ''}" placeholder="0.00" autocomplete="off">`)}
+      ${campo('pUni', 'Se vende', `<select id="pUni">${Object.entries(UNI_L).map(([k, t]) => `<option value="${k}" ${(p ? p.unidad : 'und') === k ? 'selected' : ''}>${t}</option>`).join('')}</select>`)}
+      ${campo('pCod', 'Código de barras o propio', `<input id="pCod" maxlength="60" value="${esc(p ? p.codigo || '' : codigo || '')}" autocomplete="off">`)}
+      ${campo('pMin', 'Avisar cuando queden', `<input id="pMin" inputmode="decimal" value="${p ? num3(p.minimo).replace(/,/g, '') : ''}" placeholder="0" autocomplete="off">`)}
+      ${ed ? '' : campo('pStock', 'Cuánto tienes ahora', `<input id="pStock" inputmode="decimal" placeholder="0" autocomplete="off">`) + (activos().length > 1 ? campo('pLocal', 'En qué local', selLocales('pLocal', local || activos()[0].id)) : '')}
+      ${ed ? `<div class="campo todo"><label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font:inherit;color:var(--tx)"><input type="checkbox" id="pArch" style="width:20px;min-height:20px" ${p.activo ? '' : 'checked'}> Archivado (ya no se vende ni aparece en la lista)</label></div>` : ''}
+    </div>
+    <div class="nota">El costo solo lo ve el Responsable: sirve para calcular la ganancia.</div>${pie()}`,
+    async () => {
+      const u = { unidad: val('pUni') }, precio = leerMonto(val('pPrecio')), costo = val('pCosto') ? leerMonto(val('pCosto')) : 0, min = val('pMin') ? leerCant(val('pMin'), u) : 0, stock = !ed && val('pStock') ? leerCant(val('pStock'), u) : 0;
+      if (!val('pNombre')) throw new Error('Escribe el nombre del producto.');
+      if (isNaN(precio)) throw new Error('Escribe el precio de venta en soles, por ejemplo 35 o 89.90.');
+      if (isNaN(costo)) throw new Error('Revisa el costo: escríbelo en soles.');
+      if (isNaN(min) || isNaN(stock)) throw new Error(alPeso(u) ? 'Revisa las cantidades: hasta 3 decimales, por ejemplo 12.5.' : 'Las cantidades deben ser números enteros.');
+      const d = { nombre: val('pNombre'), variante: val('pVar'), categoria: val('pCat'), codigo: val('pCod'), precio, costo, unidad: val('pUni'), minimo: min, activo: ed ? !document.getElementById('pArch').checked : true };
+      if (!ed && stock > 0) { d.stock = stock; d.local = val('pLocal') || activos()[0].id; }
+      aplicar(await rpc('inv_guardar_producto', { p_id: id || null, p: d })); toast(ed ? 'Producto guardado' : 'Producto agregado');
+      if (!ed && seguido) leidos.unshift(d.nombre + (d.variante ? ' · ' + d.variante : '') + ': agregado' + (d.stock ? ' con ' + cant(d, d.stock) : ''));
+    });
+  const rotulos = () => { const u = UNI[val('pUni')], pe = val('pUni') !== 'und'; $('#pPrecioLb').textContent = pe ? 'Precio por ' + u + ' (S/)' : 'Precio de venta (S/)'; $('#pCostoLb').textContent = pe ? 'Costo por ' + u + ' (S/)' : 'Costo (S/)'; };
+  $('#pUni').addEventListener('change', rotulos); rotulos();
+}
+
+function fFicha(id) {
+  const p = pro(id); if (!p) return;
+  const ms = D.movimientos.filter(m => m.producto_id === id).slice(0, 6), of = Number(p.oferta) > 0;
+  ventana(`<h3>${esc(nom(p))}${ofertaPill(p)}</h3><p class="sub">${esc([p.categoria, p.codigo ? 'código ' + p.codigo : '', p.activo ? '' : 'archivado'].filter(Boolean).join(' · ') || 'Sin categoría ni código')}</p>
+    <div class="det">
+      <span>${alPeso(p) ? 'Precio por ' + UNI[p.unidad] : 'Precio de venta'}</span><b>${of ? `<span class="tach">${fmt(p.precio)}</span>` : ''}${fmt(precioFinal(p))}</b>
+      ${veCosto() ? `<span>${alPeso(p) ? 'Costo por ' + UNI[p.unidad] : 'Costo'}</span><b>${fmt(p.costo)}</b><span>Ganancia por ${alPeso(p) ? UNI[p.unidad] : 'unidad'}</span><b>${fmt(precioFinal(p) - Number(p.costo || 0))}</b>` : ''}
+      ${D.locales.filter(l => l.activo || stk(id, l.id)).map(l => `<span>Stock en ${esc(l.nombre)}</span><b>${cant(p, stk(id, l.id))}</b>`).join('')}
+      ${D.locales.length > 1 ? `<span>Stock total</span><b class="stk ${nivel(p)}">${cant(p, stkTotal(id))}</b>` : ''}
+      <span>Aviso cuando queden</span><b>${cant(p, p.minimo)}</b>
+    </div>
+    ${puedeEditar() && p.activo ? `<div class="acciones">
+      <button type="button" class="bt pri" data-a="mover" data-v="entrada" data-p="${id}">Ingreso</button>
+      ${activos().length > 1 ? `<button type="button" class="bt" data-a="trasladar" data-p="${id}">Trasladar</button>` : ''}
+      ${puedeTodo() ? `<button type="button" class="bt" data-a="mover" data-v="ajuste" data-p="${id}">Ajustar conteo</button>
+      <button type="button" class="bt" data-a="mover" data-v="salida" data-p="${id}">Salida</button>
+      <button type="button" class="bt amb" data-a="oferta1" data-p="${id}">${of ? 'Cambiar oferta' : 'Poner en oferta'}</button>` : ''}
+    </div>` : ''}
+    ${ms.length ? `<div class="rot" style="margin:16px 0 6px">Últimos movimientos</div><div class="lista">${ms.map(filaMov).join('')}</div>` : ''}
+    <div class="pie">${puedeTodo() ? `<button type="button" class="bt izq" data-a="producto" data-p="${id}">Editar</button>` : ''}<button type="button" class="bt" data-a="cerrar">Cerrar</button></div>`);
+}
+
+function fMover(id, tipo) {
+  const p = pro(id), lv = local || activos()[0].id;
+  const T = { entrada: ['Ingreso de mercadería', 'Llegó mercadería: se suma al stock.', '¿Cuánto llegó?'], salida: ['Salida', 'Merma, pérdida, regalo o uso propio: se resta del stock sin ser venta.', '¿Cuánto sale?'], ajuste: ['Ajustar por conteo', 'Contaste o pesaste y el número no coincide: escribe lo que hay de verdad.', '¿Cuánto hay?'] }[tipo];
+  ventana(`<h3>${T[0]}</h3><p class="sub">${esc(nom(p))} · ${T[1]}</p>
+    <div class="campos">
+      ${campo('mLocal', 'Local', selLocales('mLocal', lv))}
+      ${campo('mCant', T[2] + ' (' + UNI[p.unidad || 'und'] + ')', `<input id="mCant" inputmode="${alPeso(p) ? 'decimal' : 'numeric'}" placeholder="0" autocomplete="off" autofocus>`)}
+      ${tipo === 'entrada' && puedeTodo() ? campo('mCosto', 'Costo por ' + (alPeso(p) ? UNI[p.unidad] : 'unidad') + ' (opcional)', `<input id="mCosto" inputmode="decimal" placeholder="${Number(p.costo || 0).toFixed(2)}" autocomplete="off">`) : ''}
+      ${campo('mNota', 'Nota (opcional)', `<input id="mNota" maxlength="200" placeholder="${tipo === 'entrada' ? 'Ej. Pedido de Gamarra' : tipo === 'salida' ? 'Ej. Prenda fallada' : 'Ej. Conteo de fin de mes'}" autocomplete="off">`, !(tipo === 'entrada' && puedeTodo()))}
+    </div>
+    <div class="nota" id="mHay"></div>${pie(tipo === 'ajuste' ? 'Ajustar' : 'Registrar')}`,
+    async () => {
+      const c = leerCant(val('mCant'), p), costo = val('mCosto') ? leerMonto(val('mCosto')) : null;
+      if (isNaN(c) || (tipo !== 'ajuste' && c === 0)) throw new Error(alPeso(p) ? 'Escribe la cantidad, por ejemplo 12.5.' : 'Escribe la cantidad con números enteros.');
+      if (costo !== null && isNaN(costo)) throw new Error('Revisa el costo: escríbelo en soles.');
+      aplicar(await rpc('inv_mover', { p_local: val('mLocal'), p_producto: id, p_tipo: tipo, p_cantidad: c, p_nota: val('mNota') || null, p_costo: costo }));
+      toast(tipo === 'entrada' ? 'Ingreso registrado' : tipo === 'salida' ? 'Salida registrada' : 'Stock ajustado');
+      if (seguido) leidos.unshift(nom(p) + ': ' + (tipo === 'ajuste' ? 'contado ' : 'ingresó ') + cant(p, c));
+    });
+  const hay = () => { $('#mHay').textContent = 'Ahora hay ' + cant(p, stk(id, val('mLocal'))) + ' en ' + loc(val('mLocal')).nombre + '.'; };
+  $('#mLocal').addEventListener('change', hay); hay();
+}
+
+function fTrasladar(id) {
+  const p = pro(id), con = D.locales.filter(l => stk(id, l.id) > 0), o = (con.find(l => l.id === local) || con[0] || activos()[0]).id, d = (activos().find(l => l.id !== o) || {}).id;
+  ventana(`<h3>Trasladar</h3><p class="sub">${esc(nom(p))} · sale de un local y entra al otro en un solo paso.</p>
+    <div class="campos">
+      ${campo('tOri', 'Sale de', `<select id="tOri">${D.locales.filter(l => l.activo || stk(id, l.id)).map(l => `<option value="${l.id}" ${l.id === o ? 'selected' : ''}>${esc(l.nombre)} · hay ${cant(p, stk(id, l.id))}</option>`).join('')}</select>`)}
+      ${campo('tDes', 'Entra a', selLocales('tDes', d))}
+      ${campo('tCant', '¿Cuánto? (' + UNI[p.unidad || 'und'] + ')', `<input id="tCant" inputmode="${alPeso(p) ? 'decimal' : 'numeric'}" placeholder="0" autocomplete="off" autofocus>`)}
+      ${campo('tNota', 'Nota (opcional)', `<input id="tNota" maxlength="200" autocomplete="off">`)}
+    </div>${pie('Trasladar')}`,
+    async () => {
+      const c = leerCant(val('tCant'), p);
+      if (isNaN(c) || c === 0) throw new Error(alPeso(p) ? 'Escribe la cantidad, por ejemplo 12.5.' : 'Escribe la cantidad con números enteros.');
+      if (val('tOri') === val('tDes')) throw new Error('Elige dos locales distintos.');
+      aplicar(await rpc('inv_trasladar', { p_origen: val('tOri'), p_destino: val('tDes'), p_producto: id, p_cantidad: c, p_nota: val('tNota') || null })); toast('Traslado registrado');
+    });
+}
+
+// Oferta por porcentaje a uno o a varios productos de una vez
+function fOferta(ids) {
+  const ps = ids.map(pro).filter(Boolean), uno = ps.length === 1, act = uno ? Number(ps[0].oferta) : 0;
+  ventana(`<h3>${uno ? 'Oferta' : 'Oferta para ' + ps.length + ' productos'}</h3><p class="sub">${uno ? esc(nom(ps[0])) + ' · precio normal ' + fmt(ps[0].precio) : 'El descuento se aplica a todos los elegidos con este solo paso.'}</p>
+    <div class="campos">${campo('oPct', 'Descuento (%)', `<input id="oPct" inputmode="decimal" value="${act || ''}" placeholder="Ej. 20" autocomplete="off" autofocus>`, true)}</div>
+    <div class="fila" style="margin-top:10px">${[10, 15, 20, 30, 50].map(n => `<button type="button" class="bt peq" data-a="pct" data-v="${n}">${n}%</button>`).join('')}</div>
+    <div class="nota" id="oVer"></div>
+    ${pie('Activar oferta', ps.some(p => Number(p.oferta) > 0) ? '<button type="button" class="bt mal izq" data-a="ofertaFuera">Quitar oferta</button>' : '')}`,
+    async quitar => {
+      const pct = quitar === 'quitar' ? 0 : leerMonto(val('oPct'));
+      if (isNaN(pct) || pct < 0 || pct > 90 || (!quitar && pct === 0)) throw new Error('Escribe un descuento entre 1 y 90 %.');
+      aplicar(await rpc('inv_oferta', { p_ids: ps.map(p => p.id), p_pct: pct }));
+      if (selec) selec = null;
+      toast(pct ? `Oferta de ${pct}% activada en ${ps.length} ${ps.length === 1 ? 'producto' : 'productos'}` : 'Oferta quitada');
+    });
+  const ver = () => { const pct = leerMonto(val('oPct')), ok = !isNaN(pct) && pct > 0 && pct <= 90;
+    $('#oVer').innerHTML = !ok ? 'Escribe el porcentaje o toca uno de los botones.' : uno ? `Se venderá a <b>${fmt(Math.round(Number(ps[0].precio) * (100 - pct)) / 100)}</b> en lugar de ${fmt(ps[0].precio)}.`
+      : ps.slice(0, 4).map(p => `${esc(nom(p))}: ${fmt(p.precio)} → <b>${fmt(Math.round(Number(p.precio) * (100 - pct)) / 100)}</b>`).join('<br>') + (ps.length > 4 ? `<br>y ${ps.length - 4} más.` : ''); };
+  $('#oPct').addEventListener('input', ver); $('#vent').ver = ver; ver();
+}
+
+function fVenta(id) {
+  const v = D.ventas.find(x => x.id === id), ls = D.movimientos.filter(m => m.venta_id === id && m.tipo === 'venta');
+  ventana(`<h3>Venta de ${fmt(v.total)}${v.anulada ? ' <span class="pill mal">anulada</span>' : ''}</h3><p class="sub">${esc([cuando(v.cuando), loc(v.local_id).nombre, v.usuario].filter(Boolean).join(' · '))}</p>
+    <div class="lista">${ls.length ? ls.map(m => `<div class="it"><span class="it-n">${esc(nom(pro(m.producto_id)))}${Number(m.descuento_pct) > 0 ? ` <span class="pill of">−${Number(m.descuento_pct)}%</span>` : ''}</span><span class="it-m">${fmt(r2(m.precio_unit * -m.cantidad))}</span>
+      <span class="it-s">${cant(pro(m.producto_id), -m.cantidad)} × ${fmt(m.precio_unit)}</span><span class="it-q"></span></div>`).join('') : '<p class="dim">El detalle de esta venta ya no está entre los últimos movimientos.</p>'}</div>
+    <div class="pie">${puedeTodo() && !v.anulada ? `<button type="button" class="bt mal izq" data-a="anular" data-v="${id}">Anular venta</button>` : ''}<button type="button" class="bt" data-a="cerrar">Cerrar</button></div>`);
+}
+
+function fLocal(id) {
+  const l = id ? D.locales.find(x => x.id === id) : null;
+  ventana(`<h3>${l ? 'Editar local' : 'Agregar local'}</h3><p class="sub">Una tienda, un almacén o un puesto: cada uno con su propio stock.</p>
+    <div class="campos">${campo('lNombre', 'Nombre', `<input id="lNombre" maxlength="60" value="${esc(l ? l.nombre : '')}" placeholder="Ej. Tienda Gamarra" autocomplete="off" autofocus>`, true)}
+      ${l ? `<div class="campo todo"><label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font:inherit;color:var(--tx)"><input type="checkbox" id="lInac" style="width:20px;min-height:20px" ${l.activo ? '' : 'checked'}> Inactivo (ya no se usa; primero hay que trasladar su stock)</label></div>` : ''}</div>${pie()}`,
+    async () => {
+      if (!val('lNombre')) throw new Error('Escribe el nombre del local.');
+      aplicar(await rpc('inv_guardar_local', { p_id: id || null, p_nombre: val('lNombre'), p_activo: l ? !document.getElementById('lInac').checked : true })); toast('Local guardado');
+    });
+}
+
+// Leer un código de barras con la cámara. Usa el lector del navegador si lo tiene (Android);
+// si no (iPhone y otros), carga una librería de lectura. La pistola láser no pasa por aquí: escribe como un teclado.
+const ZX = 'https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js';
+async function escanear(alLeer) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast('Este navegador no deja usar la cámara. Usa la pistola o escribe el código.'); return; }
+  const volver = seguido;
+  ventana(`<h3>Escanear código</h3><p class="sub">Apunta la cámara al código de barras.</p><video id="cam" playsinline muted></video><div class="pie"><button type="button" class="bt" data-a="${volver ? 'escaner' : 'cerrar'}">Cancelar</button></div>`);
+  seguido = volver;
+  const listo = c => { apagarCamara(); if (!volver) cerrar(); alLeer(String(c).trim()); };
+  try {
+    if ('BarcodeDetector' in window) {
+      flujo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const v = $('#cam'); if (!v) { apagarCamara(); return; }
+      v.srcObject = flujo; await v.play();
+      const det = new BarcodeDetector(), mio = flujo;
+      const mirar = async () => {
+        if (flujo !== mio) return;
+        try { const r = await det.detect(v); if (r.length) { listo(r[0].rawValue); return; } } catch (e) { }
+        setTimeout(mirar, 250);
+      };
+      mirar();
+    } else {
+      if (!window.ZXing) await new Promise((ok, mal) => { const sc = document.createElement('script'); sc.src = ZX; sc.onload = ok; sc.onerror = () => mal(new Error('red')); document.head.appendChild(sc); });
+      if (!$('#cam')) return;
+      lectorZ = new ZXing.BrowserMultiFormatReader();
+      const mio = lectorZ;
+      await lectorZ.decodeFromConstraints({ video: { facingMode: 'environment' } }, 'cam', r => { if (r && lectorZ === mio) listo(r.getText()); });
+    }
+  } catch (e) { apagarCamara(); if (volver) fEscaner(); else cerrar(); toast(e.message === 'red' ? 'No se pudo preparar el lector. Revisa tu internet.' : 'No se pudo abrir la cámara. Revisa el permiso del navegador.'); }
+}
+
+// Inventario con escáner: lee un código tras otro (pistola, cámara o a mano). Si el producto existe, pide
+// cuánto hay o cuánto llegó; si no existe, abre la ficha nueva con el código ya puesto. Vuelve aquí solo.
+function fEscaner() {
+  const todo = puedeTodo();
+  ventana(`<h3>Inventario con escáner</h3><p class="sub">Lee el código con la pistola láser o con la cámara. ${todo ? 'Si el producto es nuevo, lo creas ahí mismo; si ya existe, escribes cuánto hay.' : 'Registra cuánto llegó de cada producto.'}</p>
+    <div class="campos">${campo('eCod', 'Código', `<input id="eCod" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Esperando lectura…" autofocus>`, true)}</div>
+    <div class="acciones"><button type="button" class="bt" data-a="escanear" data-v="seguido">Usar la cámara</button><button type="submit" class="bt pri">Buscar código</button></div>
+    ${todo ? `<div class="fila" style="margin-top:12px"><span class="dim">Con un producto que ya existe:</span><div class="seg" id="eModo"><button type="button" data-a="eModo" data-v="ajuste" aria-pressed="${modoEsc === 'ajuste'}">Contar lo que hay</button><button type="button" data-a="eModo" data-v="entrada" aria-pressed="${modoEsc === 'entrada'}">Sumar lo que llegó</button></div></div>` : ''}
+    <div class="nota" id="eLeidos">${leidos.length ? '<b>En esta sesión (' + leidos.length + ')</b><br>' + leidos.slice(0, 6).map(esc).join('<br>') : 'La pistola láser funciona conectada a la computadora o al celular (por USB con adaptador, o Bluetooth): escribe el código aquí y pasa sola al siguiente paso.'}</div>
+    <div class="pie"><button type="button" class="bt" data-a="cerrar">Terminar</button></div>`,
+    async () => { const c = val('eCod'); if (c) codigoEscaner(c); return false; });
+  seguido = true;
+  const e = $('#eCod'); if (e) e.focus();
+}
+let modoEsc = 'ajuste';
+function codigoEscaner(c) {
+  const p = D.productos.find(x => x.codigo && x.codigo.toLowerCase() === c.toLowerCase() && x.activo) || D.productos.find(x => x.codigo && x.codigo.toLowerCase() === c.toLowerCase());
+  const s = true;
+  if (p && !p.activo) { fEscaner(); $('#vErr').textContent = 'El código ' + c + ' es de «' + nom(p) + '», que está archivado.'; return; }
+  if (p) { fMover(p.id, puedeTodo() ? modoEsc : 'entrada'); seguido = s; return; }
+  if (puedeTodo()) { fProducto(null, c); seguido = s; return; }
+  fEscaner(); $('#vErr').textContent = 'No hay un producto con el código ' + c + '. Pídele al Responsable que lo agregue.';
+}
+// Código leído en Inventario (buscador, cámara o pistola): abre el producto, o lo crea con ese código
+function codigoInventario(c) {
+  const p = D.productos.find(x => x.codigo && x.codigo.toLowerCase() === c.toLowerCase());
+  if (p) fFicha(p.id);
+  else if (puedeTodo()) { fProducto(null, c); toast('Código nuevo: completa los datos del producto.'); }
+  else toast('No hay un producto con el código ' + c + '.');
+}
+function codigoVenta(c) {
+  const p = porCodigo(c); if (!p) return false;
+  if (alPeso(p)) { fPeso(p.id); return true; }
+  if (agregar(p.id)) { pintar(); toast('Agregado: ' + nom(p)); return true; }
+  return false;
+}
+
+// Venta al peso: se escribe el peso, o el monto que pide el cliente ("dame 5 soles")
+function fPeso(id) {
+  const p = pro(id), lv = localVenta(), l = carro.find(x => x.id === id), hay = stk(id, lv), u = UNI[p.unidad], pf = precioFinal(p);
+  ventana(`<h3>${esc(nom(p))}${ofertaPill(p)}</h3><p class="sub">${fmt(pf)} por ${u} · hay ${cant(p, hay)} en ${esc(loc(lv).nombre)}</p>
+    <div class="campos">
+      ${campo('wPeso', 'Cuánto lleva (' + u + ')', `<input id="wPeso" inputmode="decimal" value="${l ? l.q : ''}" placeholder="Ej. 0.350" autocomplete="off" autofocus>`)}
+      ${campo('wMonto', 'O por monto (S/)', `<input id="wMonto" inputmode="decimal" placeholder="Ej. 5.00" autocomplete="off">`)}
+    </div>
+    <div class="nota" id="wVer"></div>
+    ${pie(l ? 'Cambiar' : 'Agregar a la venta', l ? `<button type="button" class="bt mal izq" data-a="quitar" data-p="${id}">Quitar</button>` : '')}`,
+    async () => {
+      const q = pesoDe(); if (!(q > 0)) throw new Error('Escribe el peso (por ejemplo 0.350) o el monto en soles.');
+      if (q > hay) throw new Error('Solo hay ' + cant(p, hay) + ' en ' + loc(lv).nombre + '.');
+      if (l) l.q = q; else carro.push({ id, q });
+    });
+  const pesoDe = () => { const w = leerCant(val('wPeso'), p), m = leerMonto(val('wMonto')); return val('wPeso') ? w : (!isNaN(m) && pf > 0 ? r3(m / pf) : NaN); };
+  const ver = e => {
+    if (e && e.target.id === 'wPeso' && val('wPeso')) $('#wMonto').value = '';
+    if (e && e.target.id === 'wMonto' && val('wMonto')) $('#wPeso').value = '';
+    const q = pesoDe();
+    $('#wVer').innerHTML = q > 0 ? `${cant(p, q)} × ${fmt(pf)} = <b>${fmt(r2(q * pf))}</b>` : 'Escribe el peso que marca la balanza, o el monto que pide el cliente.';
+  };
+  $('#wPeso').addEventListener('input', ver); $('#wMonto').addEventListener('input', ver); ver();
+}
+function agregar(id) {
+  const p = pro(id), lv = localVenta(); if (!p || !lv) return false;
+  if (alPeso(p)) { fPeso(id); return false; }
+  const l = carro.find(x => x.id === id), q = l ? l.q : 0;
+  if (stk(id, lv) - q <= 0) { toast('No queda más stock de ' + nom(p) + ' en ' + loc(lv).nombre + '.'); return false; }
+  if (l) l.q++; else carro.push({ id, q: 1 });
+  return true;
+}
+function porCodigo(c) {
+  const p = D.productos.find(x => x.activo && x.codigo && x.codigo.toLowerCase() === c.toLowerCase());
+  if (!p) { toast('No hay un producto con el código ' + c + '.'); return null; }
+  return p;
+}
+
+async function excel() {
+  if (!window.YupaExcel) await new Promise((ok, mal) => { const s = document.createElement('script'); s.src = PORTAL + 'exportar-excel.js'; s.onload = ok; s.onerror = () => mal(new Error('No se pudo preparar el Excel. Revisa tu internet.')); document.head.appendChild(s); });
+  const r = await rpc('inv_reporte', { p_desde: sumarDias(hoy, -89), p_hasta: hoy, p_local: null, p_como: COMO || null }), g = veCosto(), ls = D.locales, tc = D.productos.some(alPeso) ? 'decimal' : 'entero';
+  await YupaExcel.descargar({
+    archivo: 'Yupasoft_Inventario_' + (ctx.empresa || '') + '_' + hoy,
+    hojas: [
+      { nombre: 'Inventario', titulo: 'Inventario · ' + (ctx.empresa || '') + ' · al ' + hoy,
+        columnas: [{ clave: 'nombre', titulo: 'Producto' }, { clave: 'variante', titulo: 'Talla / variante' }, { clave: 'categoria', titulo: 'Categoría' }, { clave: 'codigo', titulo: 'Código', tipo: 'texto' }, { clave: 'uni', titulo: 'Se vende por' },
+          { clave: 'precio', titulo: 'Precio normal', tipo: 'moneda' }, { clave: 'of', titulo: 'Oferta', tipo: 'porcentaje' }, { clave: 'final', titulo: 'Precio de venta', tipo: 'moneda' },
+          ...(g ? [{ clave: 'costo', titulo: 'Costo', tipo: 'moneda' }] : []),
+          ...ls.map(l => ({ clave: 'l_' + l.id, titulo: l.nombre, tipo: tc })), ...(ls.length > 1 ? [{ clave: 'total', titulo: 'Stock total', tipo: tc }] : []),
+          { clave: 'minimo', titulo: 'Mínimo', tipo: tc }, { clave: 'estado', titulo: 'Estado' }, ...(g ? [{ clave: 'valor', titulo: 'Valor al costo', tipo: 'moneda' }] : [])],
+        filas: D.productos.map(p => { const f = { ...p, uni: UNI[p.unidad || 'und'], of: Number(p.oferta) / 100, final: precioFinal(p), total: stkTotal(p.id), estado: !p.activo ? 'Archivado' : nivel(p) === 'cero' ? 'Agotado' : nivel(p) === 'bajo' ? 'Por agotarse' : 'Con stock', valor: Number(p.costo || 0) * stkTotal(p.id) }; ls.forEach(l => f['l_' + l.id] = stk(p.id, l.id)); return f; }) },
+      { nombre: 'Movimientos', titulo: 'Últimos movimientos · ' + (ctx.empresa || ''),
+        columnas: [{ clave: 'cuando', titulo: 'Cuándo', tipo: 'fechahora' }, { clave: 'tipo', titulo: 'Tipo' }, { clave: 'producto', titulo: 'Producto' }, { clave: 'local', titulo: 'Local' }, { clave: 'cantidad', titulo: 'Cantidad', tipo: tc }, { clave: 'uni', titulo: 'Unidad' }, { clave: 'usuario', titulo: 'Usuario' }, { clave: 'nota', titulo: 'Nota' }],
+        filas: D.movimientos.map(m => ({ cuando: m.cuando, tipo: TIPO[m.tipo], producto: nom(pro(m.producto_id)), local: loc(m.local_id).nombre, cantidad: m.cantidad, uni: UNI[(pro(m.producto_id) || {}).unidad || 'und'], usuario: m.usuario, nota: m.nota })) },
+      { nombre: 'Ventas', titulo: 'Últimas ventas · ' + (ctx.empresa || ''),
+        columnas: [{ clave: 'cuando', titulo: 'Cuándo', tipo: 'fechahora' }, { clave: 'local', titulo: 'Local' }, { clave: 'usuario', titulo: 'Vendedor' }, { clave: 'lineas', titulo: 'Productos', tipo: 'entero' }, { clave: 'total', titulo: 'Total', tipo: 'moneda' }, { clave: 'estado', titulo: 'Estado' }],
+        filas: D.ventas.map(v => ({ cuando: v.cuando, local: loc(v.local_id).nombre, usuario: v.usuario, lineas: v.lineas, total: v.total, estado: v.anulada ? 'Anulada' : 'Vigente' })) },
+      { nombre: 'Ventas por día', titulo: 'Ventas por día · últimos 90 días',
+        columnas: [{ clave: 'dia', titulo: 'Día', tipo: 'fecha' }, { clave: 'ventas', titulo: 'Ventas', tipo: 'entero' }, { clave: 'total', titulo: 'Vendido', tipo: 'moneda' }, ...(g ? [{ clave: 'ganancia', titulo: 'Ganancia', tipo: 'moneda' }] : [])],
+        filas: r.dias },
+      { nombre: 'Más vendidos', titulo: 'Lo que más se vende · últimos 90 días',
+        columnas: [{ clave: 'producto', titulo: 'Producto' }, { clave: 'cantidad', titulo: 'Cantidad', tipo: tc }, { clave: 'uni', titulo: 'Unidad' }, { clave: 'total', titulo: 'Vendido', tipo: 'moneda' }, ...(g ? [{ clave: 'ganancia', titulo: 'Ganancia', tipo: 'moneda' }] : [])],
+        filas: r.productos.map(x => ({ ...x, producto: nom(pro(x.producto_id)), uni: UNI[(pro(x.producto_id) || {}).unidad || 'und'] })) }]
+  });
+}
+
+/* ---------- Acciones ---------- */
+const error = e => toast(e.message || 'Algo salió mal.');
+const repinta = (id, pos) => { pintar(); const n = document.getElementById(id); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) { } } };
+const ACC = {
+  reintentar: comprobar,
+  vista: b => { vista = b.dataset.v; if (vista !== 'inventario') selec = null; pintar(); scrollTo(0, 0); },
+  tema: () => { const c = document.documentElement.getAttribute('data-tema') === 'claro'; if (c) document.documentElement.removeAttribute('data-tema'); else document.documentElement.setAttribute('data-tema', 'claro'); try { localStorage.setItem('yp_tema', c ? 'oscuro' : 'claro'); } catch (e) { } pintarTema(); },
+  excel: b => { b.disabled = true; excel().catch(error).finally(() => b.disabled = false); },
+  local: b => { local = b.dataset.v; try { localStorage.setItem('yi_local', local); } catch (e) { } carro = []; pintar(); },
+  cat: b => { filtro.cat = b.dataset.v; pintar(); },
+  arch: () => { filtro.arch = !filtro.arch; pintar(); },
+  ficha: b => fFicha(b.dataset.p),
+  producto: b => fProducto(b.dataset.p),
+  mover: b => fMover(b.dataset.p, b.dataset.v),
+  trasladar: b => fTrasladar(b.dataset.p),
+  selec: () => { selec = new Set(); pintar(); },
+  selFin: () => { selec = null; pintar(); },
+  marcar: b => { if (selec.has(b.dataset.p)) selec.delete(b.dataset.p); else selec.add(b.dataset.p); pintar(); },
+  selTodos: () => { visibles().forEach(p => selec.add(p.id)); pintar(); },
+  oferta: () => fOferta([...selec]),
+  oferta1: b => fOferta([b.dataset.p]),
+  ofertaQuitar: async b => {
+    b.disabled = true;
+    try { aplicar(await rpc('inv_oferta', { p_ids: [...selec], p_pct: 0 })); selec = null; pintar(); toast('Oferta quitada'); } catch (e) { b.disabled = false; error(e); }
+  },
+  ofertaFuera: () => enviar('quitar'),
+  pct: b => { $('#oPct').value = b.dataset.v; $('#vent').ver(); },
+  agregar: b => { if (agregar(b.dataset.p)) pintar(); },
+  peso: b => fPeso(b.dataset.p),
+  quitar: b => { carro = carro.filter(x => x.id !== b.dataset.p); cerrar(); pintar(); },
+  escaner: () => fEscaner(),
+  eModo: b => { modoEsc = b.dataset.v; document.querySelectorAll('#eModo button').forEach(x => x.setAttribute('aria-pressed', x === b)); const e = $('#eCod'); if (e) e.focus(); },
+  mas: b => { if (agregar(b.dataset.p)) pintar(); },
+  menos: b => { const l = carro.find(x => x.id === b.dataset.p); if (!l) return; if (--l.q <= 0) carro = carro.filter(x => x !== l); pintar(); },
+  vaciar: () => { carro = []; pintar(); },
+  cobrar: async b => {
+    b.disabled = true;
+    try {
+      const r = await rpc('inv_vender', { p_local: localVenta(), p_lineas: carro.map(l => ({ producto: l.id, cantidad: l.q })) });
+      aplicar(r.estado); REP = {}; carro = []; qv = ''; pintar(); toast('Venta registrada por ' + fmt(r.total));
+    } catch (e) { b.disabled = false; error(e); if (/No alcanza/.test(e.message)) { try { await cargar(); pintar(); } catch (x) { } } }
+  },
+  escanear: b => escanear(c => b.dataset.v === 'venta' ? codigoVenta(c) : b.dataset.v === 'seguido' ? codigoEscaner(c) : codigoInventario(c)),
+  fmov: b => { fmov = b.dataset.v; pintar(); },
+  verVentas: b => { verVentas = b.dataset.v === '1'; pintar(); },
+  venta: b => fVenta(b.dataset.v),
+  anular: async b => {
+    if (!confirm('¿Anular esta venta? Su stock vuelve al local y sale de los reportes. No se puede deshacer.')) return;
+    b.disabled = true;
+    try { aplicar(await rpc('inv_anular_venta', { p_venta: b.dataset.v })); REP = {}; cerrar(); pintar(); toast('Venta anulada'); } catch (e) { b.disabled = false; $('#vErr').textContent = e.message; }
+  },
+  rango: b => { rango = +b.dataset.v; pintar(); },
+  localNuevo: () => fLocal(null),
+  localEditar: b => fLocal(b.dataset.v),
+  cerrar: cerrar,
+  veloCerrar: (b, e) => { if (e.target === b) cerrar(); }
+};
+document.addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b || b.disabled) return; const f = ACC[b.dataset.a]; if (f) f(b, e); });
+document.addEventListener('input', e => {
+  if (e.target.id === 'busca') { filtro.q = e.target.value; repinta('busca', e.target.selectionStart); }
+  if (e.target.id === 'qv') { qv = e.target.value; repinta('qv', e.target.selectionStart); }
+});
+document.addEventListener('change', e => { if (e.target.id === 'selLocal') { local = e.target.value; try { localStorage.setItem('yi_local', local); } catch (x) { } carro = []; pintar(); } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('#modal').innerHTML) cerrar();
+  // La pistola láser escribe el código como un teclado y termina con Enter
+  if (e.key === 'Enter' && e.target.id === 'qv' && qv.trim()) {
+    e.preventDefault(); const c = qv.trim();
+    if (codigoVenta(c)) { qv = ''; if (!$('#modal').innerHTML) repinta('qv', 0); }
+    return;
+  }
+  if (e.key === 'Enter' && e.target.id === 'busca' && filtro.q.trim()) {
+    const c = filtro.q.trim();
+    if (D.productos.some(x => x.codigo && x.codigo.toLowerCase() === c.toLowerCase()) || (/^\d{6,}$/.test(c) && !visibles().length)) { e.preventDefault(); filtro.q = ''; pintar(); codigoInventario(c); }
+    return;
+  }
+  // Lectura con la pistola sin haber tocado ningún cuadro: se junta lo tecleado rápido y se usa al llegar el Enter
+  if (e.target.closest && e.target.closest('input,select,textarea')) return;
+  if ($('#modal').innerHTML || (vista !== 'vender' && vista !== 'inventario') || e.ctrlKey || e.altKey || e.metaKey) return;
+  const ahora = Date.now(); if (ahora - pistola.t > 150) pistola.c = ''; pistola.t = ahora;
+  if (e.key === 'Enter') { const c = pistola.c; pistola.c = ''; if (c.length >= 3) { e.preventDefault(); if (vista === 'vender') { if (localVenta()) codigoVenta(c); } else codigoInventario(c); } }
+  else if (e.key.length === 1) pistola.c += e.key;
+});
+const pistola = { c: '', t: 0 };
+
+function pintarTema() { const c = document.documentElement.getAttribute('data-tema') === 'claro'; $('#bTema').textContent = c ? '☾' : '☀'; const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = c ? '#F4F7FA' : '#0C1A2E'; }
+$('#logo').innerHTML = isotipo(24); $('#gLogo').innerHTML = isotipo(48); pintarTema();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
+comprobar();
+</script>
+</body>
+</html>
