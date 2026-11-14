@@ -170,7 +170,19 @@ tr.tot td{font-weight:700;background:var(--card2)}
   th,td{padding:8px 8px;font-size:12.5px}
 }
 @media print{.barra,.tabs,.bt{display:none!important}body{background:#fff;color:#000}}
+/* Con el kit de diseño (portal/vivo.css): fila con cuadrito de color, indicadores que se tocan, gráficos */
+button.kpi{display:block;width:100%;text-align:left;color:inherit;font:inherit}
+.kpi b{padding-right:44px}
+.it.av{grid-template-columns:auto minmax(0,1fr) auto;column-gap:12px}
+.it.av>.vv-av{grid-row:1/3;grid-column:1}
+.it.av .it-n{grid-column:2;grid-row:1}.it.av .it-m{grid-column:3;grid-row:1}.it.av .it-s{grid-column:2;grid-row:2}.it.av .it-q{grid-column:3;grid-row:2}
+.it.av>.vv-niv{grid-column:2/4;grid-row:3;margin-top:5px}
+.trio{display:grid;grid-template-columns:minmax(0,1fr);gap:0 20px}
+@media (min-width:1100px){.trio{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (min-width:1600px){.trio{grid-template-columns:minmax(0,5fr) minmax(0,4fr) minmax(0,4fr)}.trio .ancho2{grid-column:auto}}
+.vacio .bt{margin-top:14px}
 </style>
+<link rel="stylesheet" href="../portal/vivo.css">
 </head>
 <body>
 <div class="gate" id="gate"><div class="caja">
@@ -186,7 +198,7 @@ tr.tot td{font-weight:700;background:var(--card2)}
     <div class="barra-in">
       <div class="marca"><span id="logo"></span><span style="min-width:0">Inventario<small id="quien"></small></span></div>
       <select class="sel" id="selLocal" aria-label="Local"></select>
-      <button class="bt peq solo-pc" data-a="excel">Excel</button>
+      <button class="bt peq solo-pc" data-a="excel" id="bExcel">Excel</button>
       <button class="bt peq ico" data-a="tema" id="bTema" aria-label="Cambiar tema" title="Cambiar tema">☀</button>
       <a class="bt peq" href="../portal/?menu=1" title="Mis herramientas">←<span class="solo-pc"> Mis herramientas</span></a>
     </div>
@@ -197,6 +209,7 @@ tr.tot td{font-weight:700;background:var(--card2)}
 <div id="modal"></div>
 <div class="toast" id="toast" hidden role="status"></div>
 
+<script src="../portal/vivo.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -213,6 +226,11 @@ const COMO = new URLSearchParams(location.search).get('como');
 const MES3 = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'], DIA3 = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const TIPO = { entrada: 'Ingreso', salida: 'Salida', ajuste: 'Ajuste', venta: 'Venta', anulacion: 'Venta anulada', traslado: 'Traslado' };
 const PARADO = 30;   // días sin venderse para avisar
+// Kit de diseño común (portal/vivo.js). Si no cargó, la página funciona igual, sin íconos ni gráficos.
+const HAYV = !!window.Vivo, V = window.Vivo || { ico: () => '', av: () => '', chip: () => '', dona: () => '', barrasH: () => '', nivel: () => '', vacio: () => '', entrar() { }, contar() { } };
+const ICO_TAB = { inicio: 'inicio', inventario: 'caja', vender: 'carro', movs: 'reloj', reportes: 'grafico', locales: 'tienda' };
+const ICO_MOV = { entrada: ['entra', 'mas'], salida: ['sale', 'menos'], ajuste: ['ajuste', 'amb'], venta: ['carro', 'menos'], anulacion: ['carro', 'neutro'], traslado: ['traslado', 'neutro'] };
+let ultVista = '';
 
 /* ---------- Estado ---------- */
 let ses = null, P = null, ctx = null, hoy = '', vista = 'inicio', local = '';
@@ -314,7 +332,7 @@ function reporte(n) {
   if (!r) {
     REP[k] = 'pidiendo';
     rpc('inv_reporte', { p_desde: sumarDias(hoy, 1 - n), p_hasta: hoy, p_local: local || null, p_como: COMO || null })
-      .then(x => { REP[k] = x; pintar(); }).catch(e => { delete REP[k]; toast(e.message); });
+      .then(x => { REP[k] = x; pintar(); document.querySelectorAll('#vista .rep').forEach(V.entrar); }).catch(e => { delete REP[k]; toast(e.message); });
   }
   return null;
 }
@@ -358,8 +376,9 @@ function pintar() {
   $('#selLocal').innerHTML = (ls.length > 1 ? '<option value="">Todos los locales</option>' : '') + ls.map(l => `<option value="${l.id}" ${l.id === local ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('');
   $('#selLocal').hidden = ls.length < 2;
   if (!TABS().some(t => t[0] === vista)) vista = 'inicio';
-  $('#tabs').innerHTML = TABS().map(([id, t]) => `<button data-a="vista" data-v="${id}" ${id === vista ? 'aria-current="page"' : ''}>${t}${id === 'vender' && carro.length ? ' (' + carro.length + ')' : ''}</button>`).join('');
+  $('#tabs').innerHTML = TABS().map(([id, t]) => `<button data-a="vista" data-v="${id}" ${id === vista ? 'aria-current="page"' : ''}>${V.ico(ICO_TAB[id])}${t}${id === 'vender' && carro.length ? ' (' + carro.length + ')' : ''}</button>`).join('');
   $('#vista').innerHTML = ({ inicio: vInicio, inventario: vInventario, vender: vVender, movs: vMovs, reportes: vReportes, locales: vLocales }[vista])();
+  if (ultVista !== vista) { ultVista = vista; V.entrar($('#vista')); }
 }
 const subLocal = () => local ? 'en ' + esc(loc(local).nombre) : (activos().length > 1 ? 'en todos los locales' : '');
 const stockTxt = p => { const n = nivel(p), v = stkVista(p.id); return `<span class="stk ${n}">${cant(p, v)}</span>`; };
@@ -376,29 +395,38 @@ function vInicio() {
     barras = `<div class="barras">${dias.map(x => `<div class="${x.f === hoy ? 'hoy' : ''}" title="${dia(x.f)}: ${fmt(x.v)}"><em>${x.v ? Math.round(x.v).toLocaleString('en-US') : ''}</em><i style="height:${Math.max(2, x.v / max * 100)}%"></i><small>${x.f === hoy ? 'Hoy' : DIA3[new Date(x.f + 'T12:00:00Z').getUTCDay()]}</small></div>`).join('')}</div>`;
   }
   if (!D.productos.length) return `<div class="fila"><h1>Inicio</h1></div>
-    <div class="vacio" style="margin-top:16px"><b>Todavía no hay productos</b>${puedeTodo() ? 'Empieza agregando lo que vendes: nombre, precio, costo y cuánto tienes.' : 'El Responsable todavía no agrega productos.'}
-    ${puedeTodo() ? '<div style="margin-top:14px"><button class="bt pri" data-a="producto">+ Agregar el primer producto</button></div>' : ''}</div>`;
-  return `<div class="fila"><h1>Inicio</h1><span class="dim">${dia(hoy)} ${subLocal() ? '· ' + subLocal() : ''}</span><span class="sep"></span>${puedeEditar() ? '<button class="bt pri" data-a="vista" data-v="vender">Nueva venta</button>' : ''}</div>
+    <div class="vacio" style="margin-top:16px">${V.vacio('caja')}<b>Todavía no hay productos</b>${puedeTodo() ? 'Empieza agregando lo que vendes: nombre, precio, costo y cuánto tienes.' : 'El Responsable todavía no agrega productos.'}
+    ${puedeTodo() ? `<div><button class="bt pri" data-a="producto">${V.ico('mas')}Agregar el primer producto</button></div>` : ''}</div>`;
+  const enOferta = vivos.filter(p => Number(p.oferta) > 0).length, mas = `<span class="vv-mas">Ver detalle ${V.ico('flecha')}</span>`;
+  const cats = {}; vivos.forEach(p => { const k = p.categoria || 'Sin categoría'; cats[k] = (cats[k] || 0) + precioFinal(p) * stkVista(p.id); });
+  const valor = Object.values(cats).reduce((a, x) => a + x, 0);
+  const top = r ? r.productos.slice(0, 5).map(x => { const p = pro(x.producto_id); return { n: nom(p), v: Number(x.total), t: fmt(x.total), s: cant(p, x.cantidad), a: `data-a="ficha" data-p="${x.producto_id}"`, c: V.colorDe ? V.colorDe((p && p.categoria) || nom(p)) : '' }; }) : [];
+  return `<div class="fila"><h1>Inicio</h1><span class="dim">${dia(hoy)} ${subLocal() ? '· ' + subLocal() : ''}</span><span class="sep"></span>${puedeEditar() ? `<button class="bt pri" data-a="vista" data-v="vender">${V.ico('carro')}Nueva venta</button>` : ''}</div>
     <div class="kpis" id="kpis">
-      <div class="kpi"><span class="rot">Vendido hoy</span><b id="kVendido">${r ? fmt(dHoy ? dHoy.total : 0) : '…'}</b><small>${r ? (dHoy ? dHoy.ventas : 0) + (dHoy && +dHoy.ventas === 1 ? ' venta' : ' ventas') : ''}</small></div>
-      ${veCosto() ? `<div class="kpi"><span class="rot">Ganancia de hoy</span><b id="kGan">${r ? fmt(dHoy ? dHoy.ganancia : 0) : '…'}</b><small>precio menos costo</small></div>` : ''}
-      <div class="kpi"><span class="rot">En stock</span><b id="kStock" style="font-size:${vivos.some(alPeso) ? 18 : 24}px">${resumen(vivos, p => stkVista(p.id))}</b><small>${vivos.length} ${vivos.length === 1 ? 'producto' : 'productos'}</small></div>
-      <div class="kpi ${bajos.length ? 'aviso' : ''}"><span class="rot">Por agotarse</span><b id="kBajos">${bajos.length}</b><small>agotados o bajo el mínimo</small></div>
-      <div class="kpi"><span class="rot">En oferta</span><b>${vivos.filter(p => Number(p.oferta) > 0).length}</b><small>productos con descuento</small></div>
+      <button class="kpi toca" data-a="pop" data-v="hoy">${V.chip('moneda')}<span class="rot">Vendido hoy</span><b id="kVendido">${r ? fmt(dHoy ? dHoy.total : 0) : '…'}</b><small>${r ? (dHoy ? dHoy.ventas : 0) + (dHoy && +dHoy.ventas === 1 ? ' venta' : ' ventas') : ''}</small><br>${mas}</button>
+      ${veCosto() ? `<button class="kpi toca" data-a="pop" data-v="hoy">${V.chip('sube', '#4FD1A0')}<span class="rot">Ganancia de hoy</span><b id="kGan">${r ? fmt(dHoy ? dHoy.ganancia : 0) : '…'}</b><small>precio menos costo</small><br>${mas}</button>` : ''}
+      <button class="kpi toca" data-a="pop" data-v="stock">${V.chip('caja', '#5B8DEF')}<span class="rot">En stock</span><b id="kStock" style="font-size:${vivos.some(alPeso) ? 18 : 24}px">${resumen(vivos, p => stkVista(p.id))}</b><small>${vivos.length} ${vivos.length === 1 ? 'producto' : 'productos'}</small><br>${mas}</button>
+      <button class="kpi toca ${bajos.length ? 'aviso' : ''}" data-a="pop" data-v="agotarse">${V.chip('alerta', '#F2A93B')}<span class="rot">Por agotarse</span><b id="kBajos">${bajos.length}</b><small>agotados o bajo el mínimo</small><br>${mas}</button>
+      <button class="kpi toca" data-a="pop" data-v="oferta">${V.chip('oferta', '#B07CF0')}<span class="rot">En oferta</span><b>${enOferta}</b><small>productos con descuento</small><br>${mas}</button>
     </div>
-    <div class="duo g32">
-      <div class="sec"><div class="fila"><h2>Ventas de los últimos 7 días</h2><span class="dim">en soles</span></div><div class="card">${barras}</div></div>
-      <div class="sec"><div class="fila"><h2>Por agotarse</h2></div>
-        <div class="lista">${bajos.length ? bajos.slice(0, 8).map(p => filaProducto(p, true)).join('') + (bajos.length > 8 ? `<span class="dim">y ${bajos.length - 8} más en Inventario</span>` : '') : '<div class="vacio">Todo con stock suficiente.</div>'}</div></div>
-    </div>`;
+    <div class="trio">
+      <div class="sec rep"><div class="fila"><h2>Ventas de los últimos 7 días</h2><span class="dim">en soles</span></div><div class="card">${barras}</div></div>
+      <div class="sec"><div class="fila"><h2>Tu inventario por categoría</h2><span class="dim">a precio de venta</span></div>
+        <div class="card" id="donaCat">${valor > 0 && HAYV ? V.dona(Object.entries(cats).map(([n, v]) => ({ n, v, a: `data-a="pop" data-v="cat" data-c="${esc(n)}"` })), fmt(valor).replace(/\.\d\d$/, ''), 'en mercadería', fmt) : '<div class="vacio">Aún no hay stock para graficar.</div>'}</div></div>
+      <div class="sec rep ancho2"><div class="fila"><h2>Lo más vendido esta semana</h2></div>
+        <div class="card" id="topSemana">${!r ? '<div class="vacio">Cargando…</div>' : top.length ? (HAYV ? V.barrasH(top) : top.map(x => `<div>${esc(x.n)} · ${x.t}</div>`).join('')) : `<div class="vacio">${V.vacio('carro')}Registra tu primera venta y aquí verás qué se mueve más.</div>`}</div></div>
+    </div>
+    <div class="sec"><div class="fila"><h2>Por agotarse</h2><span class="sep"></span>${bajos.length > 6 ? '<button class="bt peq" data-a="pop" data-v="agotarse">Ver los ' + bajos.length + '</button>' : ''}</div>
+      <div class="grilla">${bajos.length ? bajos.slice(0, 6).map(p => filaProducto(p, true)).join('') : '<div class="vacio">Todo con stock suficiente.</div>'}</div></div>`;
 }
 
 function filaProducto(p, simple) {
-  const on = selec && selec.has(p.id);
+  const on = selec && selec.has(p.id), n = nivel(p), t = stkTotal(p.id);
   const sub = [p.categoria, p.codigo, !p.activo ? 'archivado' : ''].filter(Boolean).join(' · ') || '—';
-  return `<button class="it ${on ? 'sel-on' : ''} ${p.activo ? '' : 'arch'}" data-a="${selec && !simple ? 'marcar' : 'ficha'}" data-p="${p.id}">
+  const tope = Math.max(Number(p.minimo) * 3, t, 1);
+  return `<button class="it ${HAYV ? 'av' : ''} ${on ? 'sel-on' : ''} ${p.activo ? '' : 'arch'}" data-a="${selec && !simple ? 'marcar' : 'ficha'}" data-p="${p.id}">${V.av(p.nombre, p.categoria || p.nombre)}
     <span class="it-n">${selec && !simple ? (on ? '☑ ' : '☐ ') : ''}${esc(nom(p))}${ofertaPill(p)}</span><span class="it-m">${simple ? stockTxt(p) : precioTxt(p)}</span>
-    <span class="it-s">${esc(simple ? 'mínimo ' + cant(p, p.minimo) : sub)}</span><span class="it-q">${simple ? '' : stockTxt(p)}</span></button>`;
+    <span class="it-s">${esc(simple ? 'mínimo ' + cant(p, p.minimo) : sub)}</span><span class="it-q">${simple ? '' : stockTxt(p)}</span>${p.activo ? V.nivel(t / tope * 100, n) : ''}</button>`;
 }
 function visibles() {
   const q = filtro.q.trim().toLowerCase();
@@ -410,10 +438,10 @@ function vInventario() {
   if (!cats.includes(filtro.cat)) filtro.cat = 'Todas';
   const vis = visibles(), hayArch = D.productos.some(p => !p.activo);
   return `<div class="fila"><h1>Inventario</h1><span class="dim" id="conteo">${vis.length} de ${D.productos.filter(p => filtro.arch ? !p.activo : p.activo).length} ${subLocal() ? '· stock ' + subLocal() : ''}</span><span class="sep"></span>
-      ${puedeEditar() && !selec ? '<button class="bt" data-a="escaner">Inventario con escáner</button>' : ''}
-      ${puedeTodo() && !selec ? '<button class="bt amb" data-a="selec">% Ofertas</button><button class="bt pri" data-a="producto">+ Producto</button>' : ''}</div>
+      ${puedeEditar() && !selec ? `<button class="bt" data-a="escaner">${V.ico('escaner')}Inventario con escáner</button>` : ''}
+      ${puedeTodo() && !selec ? `<button class="bt amb" data-a="selec">${V.ico('oferta')}Ofertas</button><button class="bt pri" data-a="producto">${V.ico('mas')}Producto</button>` : ''}</div>
     <div class="fila" style="margin-top:12px"><input class="busca" id="busca" type="search" placeholder="Buscar producto, código o categoría" value="${esc(filtro.q)}" autocomplete="off">
-      <button class="bt" data-a="escanear" data-v="buscar" title="Leer el código con la cámara">Escanear</button>
+      <button class="bt" data-a="escanear" data-v="buscar" title="Leer el código con la cámara">${V.ico('escaner')}Escanear</button>
       ${hayArch ? `<button class="bt peq" data-a="arch">${filtro.arch ? 'Ver activos' : 'Ver archivados'}</button>` : ''}</div>
     <div class="chips">${cats.map(c => `<button data-a="cat" data-v="${esc(c)}" aria-pressed="${c === filtro.cat}">${esc(c)}</button>`).join('')}</div>
     ${selec ? `<div class="selbar fila" id="selbar"><b>${selec.size} ${selec.size === 1 ? 'elegido' : 'elegidos'}</b><span class="dim">Toca los productos para elegirlos.</span><span class="sep"></span>
@@ -421,7 +449,7 @@ function vInventario() {
       <button class="bt peq amb" data-a="oferta" ${selec.size ? '' : 'disabled'}>Poner en oferta</button>
       <button class="bt peq" data-a="ofertaQuitar" ${selec.size ? '' : 'disabled'}>Quitar oferta</button>
       <button class="bt peq" data-a="selFin">Listo</button></div>` : ''}
-    <div class="grilla" id="lista">${vis.length ? vis.map(p => filaProducto(p)).join('') : `<div class="vacio"><b>${D.productos.length ? 'Nada con ese filtro' : 'Todavía no hay productos'}</b>${D.productos.length ? 'Prueba con otra palabra o categoría.' : (puedeTodo() ? 'Agrega tu primer producto con el botón «+ Producto».' : 'El Responsable todavía no agrega productos.')}</div>`}</div>`;
+    <div class="grilla" id="lista">${vis.length ? vis.map(p => filaProducto(p)).join('') : `<div class="vacio">${V.vacio('caja')}<b>${D.productos.length ? 'Nada con ese filtro' : 'Todavía no hay productos'}</b>${D.productos.length ? 'Prueba con otra palabra o categoría.' : (puedeTodo() ? 'Agrega tu primer producto con el botón «Producto».' : 'El Responsable todavía no agrega productos.')}</div>`}</div>`;
 }
 
 function vVender() {
@@ -433,18 +461,18 @@ function vVender() {
       ${alPeso(p) ? `<span class="cant"><button data-a="peso" data-p="${p.id}" style="width:auto;padding:0 12px;font-size:14px" aria-label="Cambiar el peso">${cant(p, l.q)}</button><button data-a="quitar" data-p="${p.id}" aria-label="Quitar">×</button></span>`
       : `<span class="cant"><button data-a="menos" data-p="${p.id}" aria-label="Quitar uno">−</button><span>${l.q}</span><button data-a="mas" data-p="${p.id}" aria-label="Agregar uno">+</button></span>`}<span class="imp">${fmt(imp)}</span></div>`; }).join('');
   return `<div class="fila"><h1>Nueva venta</h1><span class="dim">${lv ? 'Se descuenta de ' + esc(loc(lv).nombre) : ''}</span></div>
-    ${!lv ? `<div class="vacio" style="margin-top:16px"><b>¿En qué local estás vendiendo?</b>Elige el local para descontar su stock.
-      <div class="fila" style="justify-content:center;margin-top:14px">${activos().map(l => `<button class="bt" data-a="local" data-v="${l.id}">${esc(l.nombre)}</button>`).join('')}</div></div>` : `
+    ${!lv ? `<div class="vacio" style="margin-top:16px">${V.vacio('tienda')}<b>¿En qué local estás vendiendo?</b>Elige el local para descontar su stock.
+      <div class="fila" style="justify-content:center;margin-top:14px">${activos().map(l => `<button class="bt" data-a="local" data-v="${l.id}">${V.ico('tienda')}${esc(l.nombre)}</button>`).join('')}</div></div>` : `
     <div class="duo g32">
       <div class="sec"><div class="fila"><input class="busca" id="qv" type="search" placeholder="Buscar, o leer el código con la pistola" value="${esc(qv)}" autocomplete="off" style="max-width:none">
-          <button class="bt" data-a="escanear" data-v="venta">Escanear</button></div>
+          <button class="bt" data-a="escanear" data-v="venta">${V.ico('escaner')}Escanear</button></div>
         <div class="grilla" id="sugerencias">${res.length ? res.map(p => { const h = stk(p.id, lv), enCarro = (carro.find(l => l.id === p.id) || { q: 0 }).q;
-          return `<button class="it" data-a="agregar" data-p="${p.id}" ${h - enCarro <= 0 ? 'disabled style="opacity:.5"' : ''}><span class="it-n">${esc(nom(p))}${ofertaPill(p)}</span><span class="it-m">${precioTxt(p)}</span>
+          return `<button class="it ${HAYV ? 'av' : ''}" data-a="agregar" data-p="${p.id}" ${h - enCarro <= 0 ? 'disabled style="opacity:.5"' : ''}>${V.av(p.nombre, p.categoria || p.nombre)}<span class="it-n">${esc(nom(p))}${ofertaPill(p)}</span><span class="it-m">${precioTxt(p)}</span>
             <span class="it-s">${esc([p.categoria, p.codigo].filter(Boolean).join(' · ') || '—')}</span><span class="it-q"><span class="stk ${h === 0 ? 'cero' : ''}">${h === 0 ? 'sin stock aquí' : cant(p, h)}</span></span></button>`; }).join('')
           : `<div class="vacio">${D.productos.some(p => p.activo) ? 'Ningún producto con esa búsqueda.' : 'Todavía no hay productos para vender.'}</div>`}</div></div>
       <div class="sec"><div class="card carro" id="carrito"><div class="rot">En esta venta</div>
         ${carro.length ? lineas + `<div class="total"><span class="dim">Total a cobrar</span><b id="totalVenta">${fmt(tot)}</b></div>
-          <button class="bt pri gra" data-a="cobrar" id="bCobrar">Cobrar ${fmt(tot)}</button>
+          <button class="bt pri gra" data-a="cobrar" id="bCobrar">${V.ico('moneda')}Cobrar ${fmt(tot)}</button>
           <div style="text-align:center;margin-top:8px"><button class="bt peq" data-a="vaciar">Vaciar</button></div>`
         : '<p class="dim" style="margin:12px 0 0">Toca un producto de la lista o lee su código para empezar.</p>'}</div></div>
     </div>`}`;
@@ -453,7 +481,8 @@ function vVender() {
 function filaMov(m) {
   const p = pro(m.producto_id), mas = m.cantidad > 0;
   const que = m.tipo === 'traslado' ? (mas ? 'Llegó por traslado' : 'Salió por traslado') : TIPO[m.tipo];
-  return `<div class="it"><span class="it-n">${esc(que)} · ${esc(nom(p))}</span><span class="it-m ${mas ? 'mas' : 'menos'}">${mas ? '+' : '−'}${cant(p, Math.abs(m.cantidad))}</span>
+  const im = ICO_MOV[m.tipo] || ['caja', 'neutro'];
+  return `<div class="it ${HAYV ? 'av' : ''}">${V.av(m.tipo === 'traslado' ? 'traslado' : mas ? 'entra' : im[0], '', m.tipo === 'traslado' || m.tipo === 'ajuste' || m.tipo === 'anulacion' ? im[1] : mas ? 'mas' : 'menos')}<span class="it-n">${esc(que)} · ${esc(nom(p))}</span><span class="it-m ${mas ? 'mas' : 'menos'}">${mas ? '+' : '−'}${cant(p, Math.abs(m.cantidad))}</span>
     <span class="it-s">${esc([cuando(m.cuando), loc(m.local_id).nombre, m.usuario, m.nota].filter(Boolean).join(' · '))}</span><span class="it-q">${m.tipo === 'venta' ? fmt(r2(m.precio_unit * -m.cantidad)) : ''}</span></div>`;
 }
 function vMovs() {
@@ -461,13 +490,13 @@ function vMovs() {
     <div class="seg"><button data-a="verVentas" data-v="0" aria-pressed="${!verVentas}">Entradas y salidas</button><button data-a="verVentas" data-v="1" aria-pressed="${verVentas}">Ventas</button></div></div>`;
   if (verVentas) {
     const vs = D.ventas.filter(v => !local || v.local_id === local);
-    return cab + `<div class="grilla" id="ventas">${vs.length ? vs.map(v => `<button class="it ${v.anulada ? 'arch' : ''}" data-a="venta" data-v="${v.id}"><span class="it-n">Venta · ${v.lineas} ${v.lineas === 1 ? 'producto' : 'productos'}${v.anulada ? ' <span class="pill mal">anulada</span>' : ''}</span><span class="it-m">${fmt(v.total)}</span>
-      <span class="it-s">${esc([cuando(v.cuando), loc(v.local_id).nombre, v.usuario].filter(Boolean).join(' · '))}</span><span class="it-q">ver detalle</span></button>`).join('') : '<div class="vacio"><b>Aún no hay ventas</b>Aparecerán aquí apenas registres la primera.</div>'}</div>`;
+    return cab + `<div class="grilla" id="ventas">${vs.length ? vs.map(v => `<button class="it ${HAYV ? 'av' : ''} ${v.anulada ? 'arch' : ''}" data-a="venta" data-v="${v.id}">${V.av('carro', '', v.anulada ? 'neutro' : 'mas')}<span class="it-n">Venta · ${v.lineas} ${v.lineas === 1 ? 'producto' : 'productos'}${v.anulada ? ' <span class="pill mal">anulada</span>' : ''}</span><span class="it-m">${fmt(v.total)}</span>
+      <span class="it-s">${esc([cuando(v.cuando), loc(v.local_id).nombre, v.usuario].filter(Boolean).join(' · '))}</span><span class="it-q">ver detalle</span></button>`).join('') : `<div class="vacio">${V.vacio('carro')}<b>Aún no hay ventas</b>Aparecerán aquí apenas registres la primera.</div>`}</div>`;
   }
   const tipos = [['todos', 'Todo'], ['venta', 'Ventas'], ['entrada', 'Ingresos'], ['salida', 'Salidas'], ['ajuste', 'Ajustes'], ['traslado', 'Traslados']];
   const ms = D.movimientos.filter(m => (!local || m.local_id === local) && (fmov === 'todos' || m.tipo === fmov || (fmov === 'venta' && m.tipo === 'anulacion')));
   return cab + `<div class="chips">${tipos.map(([v, t]) => `<button data-a="fmov" data-v="${v}" aria-pressed="${v === fmov}">${t}</button>`).join('')}</div>
-    <div class="grilla" id="movs">${ms.length ? ms.map(filaMov).join('') : '<div class="vacio"><b>Sin movimientos</b>Aquí queda todo lo que entra y sale, con quién lo hizo.</div>'}</div>
+    <div class="grilla" id="movs">${ms.length ? ms.map(filaMov).join('') : `<div class="vacio">${V.vacio('reloj')}<b>Sin movimientos</b>Aquí queda todo lo que entra y sale, con quién lo hizo.</div>`}</div>
     ${D.movimientos.length >= 400 ? '<p class="dim" style="margin-top:10px">Se muestran los últimos 400 movimientos.</p>' : ''}`;
 }
 
@@ -480,31 +509,33 @@ function vReportes() {
   const sum = k => r.dias.reduce((a, d) => a + Number(d[k] || 0), 0), g = r.con_ganancia;
   const valorP = vivos.reduce((a, p) => a + precioFinal(p) * stkVista(p.id), 0), valorC = vivos.reduce((a, p) => a + Number(p.costo || 0) * stkVista(p.id), 0);
   const par = parados();
+  const dias = []; for (let k = Math.min(rango, 30) - 1; k >= 0; k--) { const f = sumarDias(hoy, -k), d = r.dias.find(x => x.dia === f); dias.push({ f, v: d ? Number(d.total) : 0 }); }
+  const maxD = Math.max(...dias.map(x => x.v)) || 1;
+  const top = r.productos.slice(0, 10).map(x => { const p = pro(x.producto_id); return { n: nom(p), v: Number(x.total), t: fmt(x.total), s: cant(p, x.cantidad) + (g ? ' · ganancia ' + fmt(x.ganancia) : ''), a: `data-a="ficha" data-p="${x.producto_id}"`, c: V.colorDe ? V.colorDe((p && p.categoria) || nom(p)) : '' }; });
   return cab + `<div class="kpis">
-      <div class="kpi"><span class="rot">Vendido</span><b id="rVendido">${fmt(sum('total'))}</b><small>${sum('ventas')} ${sum('ventas') === 1 ? 'venta' : 'ventas'}</small></div>
-      ${g ? `<div class="kpi"><span class="rot">Ganancia</span><b id="rGan">${fmt(sum('ganancia'))}</b><small>precio cobrado menos costo</small></div>` : ''}
-      ${g ? `<div class="kpi"><span class="rot">Inventario al costo</span><b>${fmt(valorC)}</b><small>dinero puesto en mercadería</small></div>` : ''}
-      <div class="kpi"><span class="rot">Inventario a precio de venta</span><b>${fmt(valorP)}</b><small>si se vendiera todo hoy</small></div></div>
+      <div class="kpi">${V.chip('moneda')}<span class="rot">Vendido</span><b id="rVendido">${fmt(sum('total'))}</b><small>${sum('ventas')} ${sum('ventas') === 1 ? 'venta' : 'ventas'}</small></div>
+      ${g ? `<div class="kpi">${V.chip('sube', '#4FD1A0')}<span class="rot">Ganancia</span><b id="rGan">${fmt(sum('ganancia'))}</b><small>precio cobrado menos costo</small></div>` : ''}
+      ${g ? `<div class="kpi">${V.chip('caja', '#5B8DEF')}<span class="rot">Inventario al costo</span><b>${fmt(valorC)}</b><small>dinero puesto en mercadería</small></div>` : ''}
+      <div class="kpi">${V.chip('oferta', '#B07CF0')}<span class="rot">Inventario a precio de venta</span><b>${fmt(valorP)}</b><small>si se vendiera todo hoy</small></div></div>
     <div class="duo">
-      <div class="sec"><div class="fila"><h2>Lo que más se vende</h2></div>
-        <div class="tw"><table id="tTop"><thead><tr><th>Producto</th><th>Cantidad</th><th>Vendido</th>${g ? '<th>Ganancia</th>' : ''}</tr></thead><tbody>
-        ${r.productos.length ? r.productos.slice(0, 15).map(x => `<tr><td>${esc(nom(pro(x.producto_id)))}</td><td>${cant(pro(x.producto_id), x.cantidad)}</td><td>${fmt(x.total)}</td>${g ? `<td>${fmt(x.ganancia)}</td>` : ''}</tr>`).join('') : `<tr><td colspan="${g ? 4 : 3}" style="text-align:center;color:var(--mute)">Sin ventas en este periodo.</td></tr>`}
-        </tbody></table></div></div>
-      <div class="sec"><div class="fila"><h2>Ventas por día</h2></div>
+      <div class="sec"><div class="fila"><h2>Lo que más se vende</h2><span class="dim">toca un producto para abrirlo</span></div>
+        <div class="card" id="tTop">${top.length ? (HAYV ? V.barrasH(top) : top.map(x => `<div>${esc(x.n)} · ${x.t} · ${esc(x.s)}</div>`).join('')) : `<div class="vacio">${V.vacio('grafico')}Sin ventas en este periodo.</div>`}</div></div>
+      <div class="sec"><div class="fila"><h2>Ventas por día</h2><span class="dim">${rango > 30 ? 'últimos 30 días en el gráfico' : ''}</span></div>
+        ${rango > 1 ? `<div class="card" style="margin-bottom:10px"><div class="barras" style="gap:${dias.length > 10 ? 3 : 10}px">${dias.map(x => `<div class="${x.f === hoy ? 'hoy' : ''}" title="${dia(x.f)}: ${fmt(x.v)}"><i style="height:${Math.max(2, x.v / maxD * 100)}%"></i>${dias.length <= 10 ? `<small>${x.f === hoy ? 'Hoy' : dia(x.f)}</small>` : ''}</div>`).join('')}</div></div>` : ''}
         <div class="tw"><table id="tDias"><thead><tr><th>Día</th><th>Ventas</th><th>Vendido</th>${g ? '<th>Ganancia</th>' : ''}</tr></thead><tbody>
         ${r.dias.length ? r.dias.slice().reverse().map(d => `<tr><td>${dia(d.dia)}</td><td>${d.ventas}</td><td>${fmt(d.total)}</td>${g ? `<td>${fmt(d.ganancia)}</td>` : ''}</tr>`).join('') + `<tr class="tot"><td>Total</td><td>${sum('ventas')}</td><td>${fmt(sum('total'))}</td>${g ? `<td>${fmt(sum('ganancia'))}</td>` : ''}</tr>` : `<tr><td colspan="${g ? 4 : 3}" style="text-align:center;color:var(--mute)">Sin ventas en este periodo.</td></tr>`}
         </tbody></table></div></div>
     </div>
     <div class="sec"><div class="fila"><h2>Parados hace más de ${PARADO} días</h2><span class="dim">tienen stock y no se venden</span></div>
-      <div class="grilla" id="parados">${par.length ? par.slice(0, 30).map(({ p, d }) => `<button class="it" data-a="ficha" data-p="${p.id}"><span class="it-n">${esc(nom(p))}${ofertaPill(p)}</span><span class="it-m"><span class="pill">${d} días</span></span>
+      <div class="grilla" id="parados">${par.length ? par.slice(0, 30).map(({ p, d }) => `<button class="it ${HAYV ? 'av' : ''}" data-a="ficha" data-p="${p.id}">${V.av(p.nombre, p.categoria || p.nombre)}<span class="it-n">${esc(nom(p))}${ofertaPill(p)}</span><span class="it-m"><span class="pill">${d} días</span></span>
         <span class="it-s">${cant(p, stkTotal(p.id))} · ${fmt(precioFinal(p) * stkTotal(p.id))} a precio de venta</span><span class="it-q">${p.ult_venta ? 'última venta ' + dia(p.ult_venta) : 'nunca vendido'}</span></button>`).join('') : '<div class="vacio">Todo tu inventario se ha movido hace poco.</div>'}</div></div>`;
 }
 
 function vLocales() {
   const vivos = D.productos.filter(p => p.activo);
-  return `<div class="fila"><h1>Locales</h1><span class="dim">Cada local lleva su propio stock.</span><span class="sep"></span>${puedeTodo() ? '<button class="bt pri" data-a="localNuevo">+ Local</button>' : ''}</div>
+  return `<div class="fila"><h1>Locales</h1><span class="dim">Cada local lleva su propio stock.</span><span class="sep"></span>${puedeTodo() ? `<button class="bt pri" data-a="localNuevo">${V.ico('mas')}Local</button>` : ''}</div>
     <div class="grilla" id="locales">${D.locales.map(l => { const u = resumen(vivos, p => stk(p.id, l.id));
-      return `<button class="it ${l.activo ? '' : 'arch'}" data-a="localEditar" data-v="${l.id}" ${puedeTodo() ? '' : 'disabled'}><span class="it-n">${esc(l.nombre)}${l.activo ? '' : ' <span class="pill">inactivo</span>'}</span><span class="it-m">${u}</span>
+      return `<button class="it ${HAYV ? 'av' : ''} ${l.activo ? '' : 'arch'}" data-a="localEditar" data-v="${l.id}" ${puedeTodo() ? '' : 'disabled'}>${V.av('tienda', '', l.activo ? 'mas' : 'neutro')}<span class="it-n">${esc(l.nombre)}${l.activo ? '' : ' <span class="pill">inactivo</span>'}</span><span class="it-m">${u}</span>
         <span class="it-s">${vivos.filter(p => stk(p.id, l.id) > 0).length} productos con stock</span><span class="it-q">${fmt(vivos.reduce((a, p) => a + precioFinal(p) * stk(p.id, l.id), 0))}</span></button>`; }).join('')}</div>
     <div class="nota">Para pasar mercadería de un local a otro abre el producto en Inventario y usa «Trasladar».</div>`;
 }
@@ -652,6 +683,27 @@ function fVenta(id) {
     <div class="lista">${ls.length ? ls.map(m => `<div class="it"><span class="it-n">${esc(nom(pro(m.producto_id)))}${Number(m.descuento_pct) > 0 ? ` <span class="pill of">−${Number(m.descuento_pct)}%</span>` : ''}</span><span class="it-m">${fmt(r2(m.precio_unit * -m.cantidad))}</span>
       <span class="it-s">${cant(pro(m.producto_id), -m.cantidad)} × ${fmt(m.precio_unit)}</span><span class="it-q"></span></div>`).join('') : '<p class="dim">El detalle de esta venta ya no está entre los últimos movimientos.</p>'}</div>
     <div class="pie">${puedeTodo() && !v.anulada ? `<button type="button" class="bt mal izq" data-a="anular" data-v="${id}">Anular venta</button>` : ''}<button type="button" class="bt" data-a="cerrar">Cerrar</button></div>`);
+}
+
+// Ventanas que se abren al tocar un indicador, un trozo de la dona o una barra
+function fPop(tipo, arg) {
+  const vivos = D.productos.filter(p => p.activo), lista = ps => ps.length ? `<div class="lista">${ps.map(p => filaProducto(p)).join('')}</div>` : '<div class="vacio">No hay productos aquí.</div>';
+  const cierre = `<div class="pie"><button type="button" class="bt" data-a="cerrar">Cerrar</button></div>`;
+  if (tipo === 'agotarse') { const ps = vivos.filter(p => nivel(p));
+    return ventana(`<h3>Por agotarse</h3><p class="sub">${ps.length} ${ps.length === 1 ? 'producto agotado o bajo su mínimo' : 'productos agotados o bajo su mínimo'}. Toca uno para registrar su ingreso.</p>${ps.length ? lista(ps) : '<div class="vacio">Todo con stock suficiente.</div>'}${cierre}`); }
+  if (tipo === 'oferta') { const ps = vivos.filter(p => Number(p.oferta) > 0);
+    return ventana(`<h3>En oferta</h3><p class="sub">${ps.length ? ps.length + (ps.length === 1 ? ' producto con descuento.' : ' productos con descuento.') : 'Ningún producto tiene descuento ahora.'}</p>${ps.length ? lista(ps) : `<div class="vacio">${V.vacio('oferta')}${puedeTodo() ? 'Ve a Inventario y usa el botón «Ofertas» para poner varios productos en descuento de una vez.' : 'El Responsable todavía no activa ofertas.'}</div>`}${cierre}`); }
+  if (tipo === 'cat') { const ps = vivos.filter(p => (p.categoria || 'Sin categoría') === arg).sort((a, b) => precioFinal(b) * stkVista(b.id) - precioFinal(a) * stkVista(a.id));
+    return ventana(`<h3>${esc(arg)}</h3><p class="sub">${ps.length} ${ps.length === 1 ? 'producto' : 'productos'} · ${fmt(ps.reduce((a, p) => a + precioFinal(p) * stkVista(p.id), 0))} a precio de venta ${subLocal()}</p>${lista(ps)}${cierre}`); }
+  if (tipo === 'stock') { const cats = {}; vivos.forEach(p => { const k = p.categoria || 'Sin categoría'; (cats[k] = cats[k] || []).push(p); });
+    const d = Object.entries(cats).map(([n, ps]) => ({ n, v: ps.reduce((a, p) => a + precioFinal(p) * stkVista(p.id), 0), ps })).sort((a, b) => b.v - a.v);
+    return ventana(`<h3>Lo que tienes en stock</h3><p class="sub">${resumen(vivos, p => stkVista(p.id))} ${subLocal()}. Toca una categoría para ver sus productos.</p>
+      ${HAYV ? V.barrasH(d.map(x => ({ n: x.n, v: x.v, t: fmt(x.v), s: resumen(x.ps, p => stkVista(p.id)) + ' · ' + x.ps.length + (x.ps.length === 1 ? ' producto' : ' productos'), a: `data-a="pop" data-v="cat" data-c="${esc(x.n)}"` }))) : d.map(x => `<div>${esc(x.n)} · ${fmt(x.v)}</div>`).join('')}${cierre}`); }
+  if (tipo === 'hoy') { const fL = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }), vs = D.ventas.filter(v => fL.format(new Date(v.cuando)) === hoy && (!local || v.local_id === local)), ok = vs.filter(v => !v.anulada);
+    return ventana(`<h3>Ventas de hoy</h3><p class="sub">${ok.length} ${ok.length === 1 ? 'venta' : 'ventas'} · ${fmt(ok.reduce((a, v) => a + Number(v.total), 0))} ${subLocal()}. Toca una para ver su detalle.</p>
+      ${vs.length ? `<div class="lista">${vs.map(v => `<button type="button" class="it ${HAYV ? 'av' : ''} ${v.anulada ? 'arch' : ''}" data-a="venta" data-v="${v.id}">${V.av('carro', '', v.anulada ? 'neutro' : 'mas')}<span class="it-n">${v.lineas} ${v.lineas === 1 ? 'producto' : 'productos'}${v.anulada ? ' <span class="pill mal">anulada</span>' : ''}</span><span class="it-m">${fmt(v.total)}</span>
+        <span class="it-s">${esc([cuando(v.cuando), loc(v.local_id).nombre, v.usuario].filter(Boolean).join(' · '))}</span><span class="it-q"></span></button>`).join('')}</div>` : `<div class="vacio">${V.vacio('carro')}Todavía no hay ventas hoy.</div>`}
+      <div class="pie">${puedeEditar() ? `<button type="button" class="bt pri izq" data-a="vista" data-v="vender">${V.ico('carro')}Nueva venta</button>` : ''}<button type="button" class="bt" data-a="cerrar">Cerrar</button></div>`); }
 }
 
 function fLocal(id) {
@@ -804,13 +856,14 @@ const error = e => toast(e.message || 'Algo salió mal.');
 const repinta = (id, pos) => { pintar(); const n = document.getElementById(id); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) { } } };
 const ACC = {
   reintentar: comprobar,
-  vista: b => { vista = b.dataset.v; if (vista !== 'inventario') selec = null; pintar(); scrollTo(0, 0); },
+  vista: b => { vista = b.dataset.v; if (vista !== 'inventario') selec = null; if ($('#modal').innerHTML) cerrar(); pintar(); scrollTo(0, 0); },
   tema: () => { const c = document.documentElement.getAttribute('data-tema') === 'claro'; if (c) document.documentElement.removeAttribute('data-tema'); else document.documentElement.setAttribute('data-tema', 'claro'); try { localStorage.setItem('yp_tema', c ? 'oscuro' : 'claro'); } catch (e) { } pintarTema(); },
   excel: b => { b.disabled = true; excel().catch(error).finally(() => b.disabled = false); },
   local: b => { local = b.dataset.v; try { localStorage.setItem('yi_local', local); } catch (e) { } carro = []; pintar(); },
   cat: b => { filtro.cat = b.dataset.v; pintar(); },
   arch: () => { filtro.arch = !filtro.arch; pintar(); },
   ficha: b => fFicha(b.dataset.p),
+  pop: b => fPop(b.dataset.v, b.dataset.c),
   producto: b => fProducto(b.dataset.p),
   mover: b => fMover(b.dataset.p, b.dataset.v),
   trasladar: b => fTrasladar(b.dataset.p),
@@ -864,6 +917,7 @@ document.addEventListener('input', e => {
 document.addEventListener('change', e => { if (e.target.id === 'selLocal') { local = e.target.value; try { localStorage.setItem('yi_local', local); } catch (x) { } carro = []; pintar(); } });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && $('#modal').innerHTML) cerrar();
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][data-a]')) { e.preventDefault(); e.target.click(); return; }
   // La pistola láser escribe el código como un teclado y termina con Enter
   if (e.key === 'Enter' && e.target.id === 'qv' && qv.trim()) {
     e.preventDefault(); const c = qv.trim();
@@ -886,6 +940,7 @@ const pistola = { c: '', t: 0 };
 
 function pintarTema() { const c = document.documentElement.getAttribute('data-tema') === 'claro'; $('#bTema').textContent = c ? '☾' : '☀'; const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = c ? '#F4F7FA' : '#0C1A2E'; }
 $('#logo').innerHTML = isotipo(24); $('#gLogo').innerHTML = isotipo(48); pintarTema();
+$('#bExcel').innerHTML = V.ico('bajar') + 'Excel';
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
 comprobar();
 </script>
